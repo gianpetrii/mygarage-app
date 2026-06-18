@@ -3,7 +3,7 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'CarLogger',
-  slug: 'carlogger-mobile',
+  slug: 'carlogger-app',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
