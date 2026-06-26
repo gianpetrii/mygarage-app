@@ -51,9 +51,18 @@ export const useAuthStore = create<AuthStore>((set) => ({
           const user: User = {
             id: firebaseUser.uid,
             email: firebaseUser.email ?? '',
-            name: userData?.name ?? firebaseUser.displayName ?? undefined,
-            avatarUrl: userData?.avatarUrl ?? firebaseUser.photoURL ?? undefined,
+            name:
+              userData?.name ??
+              userData?.displayName ??
+              firebaseUser.displayName ??
+              undefined,
+            avatarUrl:
+              userData?.avatarUrl ??
+              userData?.photoURL ??
+              firebaseUser.photoURL ??
+              undefined,
             pushToken: userData?.pushToken,
+            preferences: userData?.preferences,
           };
 
           const session: Session = {

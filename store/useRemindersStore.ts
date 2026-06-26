@@ -6,6 +6,7 @@ import {
   deleteReminder as deleteFromDb,
   completeReminder as completeInDb,
 } from '@/lib/reminders';
+import { cacheCollection, getCachedCollection, CACHE_KEYS } from '@/lib/offlineCache';
 import type { ServiceReminder } from '@/types';
 
 interface RemindersStore {
@@ -28,6 +29,10 @@ export const useRemindersStore = create<RemindersStore>((set) => ({
     try {
       const reminders = await getReminders(userId, vehicleId);
       set({ reminders });
+      await cacheCollection(CACHE_KEYS.reminders, reminders);
+    } catch {
+      const cached = await getCachedCollection<ServiceReminder>(CACHE_KEYS.reminders);
+      if (cached) set({ reminders: cached });
     } finally {
       set({ isLoading: false });
     }

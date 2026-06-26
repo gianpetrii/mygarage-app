@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { View, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
-import { Car, Plus } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import { Screen } from '@/components/layout/Screen';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
@@ -45,7 +45,7 @@ export default function VehiclesListScreen() {
 
       {vehicles.length === 0 && !isLoading ? (
         <EmptyState
-          icon={Car}
+          brandIcon
           title="Sin vehículos"
           description="Agregá tu primer vehículo para comenzar a registrar servicios y gastos"
           actionLabel="Agregar vehículo"

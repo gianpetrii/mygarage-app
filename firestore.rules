@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function ownsResource() {
+      return isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    function ownsIncomingData() {
+      return isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /vehicles/{docId} {
+      allow read, update, delete: if ownsResource();
+      allow create: if ownsIncomingData();
+    }
+
+    match /maintenance/{docId} {
+      allow read, update, delete: if ownsResource();
+      allow create: if ownsIncomingData();
+    }
+
+    match /fuel/{docId} {
+      allow read, update, delete: if ownsResource();
+      allow create: if ownsIncomingData();
+    }
+
+    match /expenses/{docId} {
+      allow read, update, delete: if ownsResource();
+      allow create: if ownsIncomingData();
+    }
+
+    match /reminders/{docId} {
+      allow read, update, delete: if ownsResource();
+      allow create: if ownsIncomingData();
+    }
+  }
+}

@@ -5,7 +5,7 @@ import {
   type ViewProps,
   RefreshControl,
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { KeyboardAwareScrollView } from '@/lib/keyboardController';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { cn } from '@/lib/utils';
 import { AnimatedScreen } from './AnimatedScreen';

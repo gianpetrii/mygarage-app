@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Modal, Pressable, View } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { KeyboardAvoidingView, keyboardAvoidingBehavior } from '@/lib/keyboardController';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cn } from '@/lib/utils';
 
@@ -33,7 +33,7 @@ function KeyboardSheet({
           accessibilityRole="button"
           accessibilityLabel="Cerrar"
         />
-        <KeyboardAvoidingView behavior="padding" className="bg-background">
+        <KeyboardAvoidingView behavior={keyboardAvoidingBehavior()} className="bg-background">
           <View
             className={cn(
               'rounded-t-3xl bg-background px-6 pt-6',

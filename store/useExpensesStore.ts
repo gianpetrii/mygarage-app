@@ -5,6 +5,7 @@ import {
   updateExpense as updateInDb,
   deleteExpense as deleteFromDb,
 } from '@/lib/expenses';
+import { cacheCollection, getCachedCollection, CACHE_KEYS } from '@/lib/offlineCache';
 import type { Expense } from '@/types';
 
 interface ExpensesStore {
@@ -26,6 +27,10 @@ export const useExpensesStore = create<ExpensesStore>((set) => ({
     try {
       const expenses = await getExpenses(userId, vehicleId);
       set({ expenses });
+      await cacheCollection(CACHE_KEYS.expenses, expenses);
+    } catch {
+      const cached = await getCachedCollection<Expense>(CACHE_KEYS.expenses);
+      if (cached) set({ expenses: cached });
     } finally {
       set({ isLoading: false });
     }

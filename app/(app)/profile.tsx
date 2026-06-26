@@ -1,6 +1,9 @@
 import * as React from 'react';
-import { View, Pressable } from 'react-native';
-import { Moon, Sun, Monitor, LogOut, ChevronRight, Bell } from 'lucide-react-native';
+import { View, Pressable, Linking } from 'react-native';
+import { router } from 'expo-router';
+import { Moon, Sun, Monitor, LogOut, ChevronRight, Bell, BookOpen } from 'lucide-react-native';
+import { AppEngineIcon } from '@/components/brand/AppEngineIcon';
+import { FLATICON_BRAND_ICON, FLATICON_ATTRIBUTION_LABEL } from '@/constants/attribution';
 import { Screen } from '@/components/layout/Screen';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -10,6 +13,9 @@ import { Text } from '@/components/ui/text';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/constants/colors';
+import { cn } from '@/lib/utils';
 import type { ColorScheme } from '@/types';
 
 const themeOptions: { value: ColorScheme; label: string; icon: React.ElementType }[] = [
@@ -21,6 +27,8 @@ const themeOptions: { value: ColorScheme; label: string; icon: React.ElementType
 export default function ProfileScreen() {
   const { user, logout, isLoading } = useAuthStore();
   const { colorScheme, setColorScheme } = useThemeStore();
+  const { resolvedScheme } = useColorScheme();
+  const colors = Colors[resolvedScheme];
   const [themeDialogOpen, setThemeDialogOpen] = React.useState(false);
 
   return (
@@ -41,6 +49,12 @@ export default function ProfileScreen() {
         <Card>
           <CardContent className="pt-6 gap-0">
             <SettingRow
+              icon={BookOpen}
+              label="Guías prácticas"
+              onPress={() => router.push('/(app)/guides')}
+            />
+            <Separator />
+            <SettingRow
               icon={Bell}
               label="Notificaciones"
               onPress={() => {}}
@@ -51,6 +65,13 @@ export default function ProfileScreen() {
               label="Apariencia"
               value={themeOptions.find((t) => t.value === colorScheme)?.label}
               onPress={() => setThemeDialogOpen(true)}
+            />
+            <Separator />
+            <SettingRow
+              icon={Monitor}
+              label="Moneda"
+              value={user?.preferences?.currency ?? 'ARS'}
+              onPress={() => {}}
             />
           </CardContent>
         </Card>
@@ -66,6 +87,15 @@ export default function ProfileScreen() {
             <Text className="text-base font-semibold text-white">Cerrar sesión</Text>
           </View>
         </Button>
+
+        <View className="items-center gap-2 pt-2">
+          <AppEngineIcon size={28} />
+          <Pressable onPress={() => Linking.openURL(FLATICON_BRAND_ICON.iconUrl)}>
+            <Text variant="muted" className="text-xs text-center underline">
+              {FLATICON_ATTRIBUTION_LABEL}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       <Dialog open={themeDialogOpen} onOpenChange={setThemeDialogOpen}>
@@ -73,28 +103,34 @@ export default function ProfileScreen() {
           <DialogHeader>
             <DialogTitle>Apariencia</DialogTitle>
           </DialogHeader>
-          <View className="gap-2 mt-2">
-            {themeOptions.map(({ value, label, icon: Icon }) => (
-              <Pressable
-                key={value}
-                className={[
-                  'flex-row items-center gap-3 p-3 rounded-lg',
-                  colorScheme === value ? 'bg-accent' : 'bg-transparent',
-                ].join(' ')}
-                onPress={() => {
-                  setColorScheme(value);
-                  setThemeDialogOpen(false);
-                }}
-              >
-                <Icon size={20} color={colorScheme === value ? '#18181b' : '#71717a'} />
-                <Text
-                  variant="p"
-                  className={colorScheme === value ? 'font-semibold' : 'text-muted-foreground'}
+          <View className="gap-1">
+            {themeOptions.map(({ value, label, icon: Icon }) => {
+              const selected = colorScheme === value;
+              return (
+                <Pressable
+                  key={value}
+                  className={cn(
+                    'flex-row items-center gap-3 rounded-xl px-3 py-3',
+                    selected ? 'bg-accent' : 'bg-transparent',
+                  )}
+                  onPress={() => {
+                    setColorScheme(value);
+                    setThemeDialogOpen(false);
+                  }}
                 >
-                  {label}
-                </Text>
-              </Pressable>
-            ))}
+                  <Icon
+                    size={20}
+                    color={selected ? colors.accentForeground : colors.mutedForeground}
+                  />
+                  <Text
+                    variant="p"
+                    className={selected ? 'font-semibold text-foreground' : 'text-muted-foreground'}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </DialogContent>
       </Dialog>

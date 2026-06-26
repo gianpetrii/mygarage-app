@@ -74,3 +74,4 @@ components/     # UI y layout
 - Cargas de combustible con consumo promedio
 - Gastos por categoría
 - Dark mode, push notifications
+- widget con un contador con los dias que faltan para proximo recordatorio

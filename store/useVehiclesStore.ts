@@ -5,6 +5,7 @@ import {
   updateVehicle as updateVehicleInDb,
   deleteVehicle as deleteVehicleFromDb,
 } from '@/lib/vehicles';
+import { cacheCollection, getCachedCollection, CACHE_KEYS } from '@/lib/offlineCache';
 import type { Vehicle } from '@/types';
 
 interface VehiclesStore {
@@ -29,6 +30,10 @@ export const useVehiclesStore = create<VehiclesStore>((set, get) => ({
     try {
       const vehicles = await getVehicles(userId);
       set({ vehicles });
+      await cacheCollection(CACHE_KEYS.vehicles, vehicles);
+    } catch {
+      const cached = await getCachedCollection<Vehicle>(CACHE_KEYS.vehicles);
+      if (cached) set({ vehicles: cached });
     } finally {
       set({ isLoading: false });
     }

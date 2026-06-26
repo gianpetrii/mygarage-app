@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { View, Pressable, Image } from 'react-native';
-import { Car, ChevronRight } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
+import { AppEngineIcon } from '@/components/brand/AppEngineIcon';
 import { cn } from '@/lib/utils';
 import { Text } from './text';
 import type { Vehicle } from '@/types';
@@ -31,13 +32,14 @@ function VehicleCard({ vehicle, onPress, compact = false, className }: VehicleCa
         />
       ) : (
         <View className={cn('rounded-lg bg-muted items-center justify-center', compact ? 'w-14 h-14' : 'w-16 h-16')}>
-          <Car size={compact ? 24 : 28} color="#71717a" />
+          <AppEngineIcon size={compact ? 24 : 28} />
         </View>
       )}
 
       <View className="flex-1 gap-0.5">
         <Text className="font-semibold text-foreground" numberOfLines={1}>
           {vehicle.make} {vehicle.model}
+          {vehicle.trim ? ` ${vehicle.trim}` : ''}
         </Text>
         <Text variant="muted" className="text-sm">{vehicle.year}</Text>
         {!compact && (

@@ -5,6 +5,7 @@ import {
   updateFuelEntry as updateInDb,
   deleteFuelEntry as deleteFromDb,
 } from '@/lib/fuel';
+import { cacheCollection, getCachedCollection, CACHE_KEYS } from '@/lib/offlineCache';
 import type { FuelEntry } from '@/types';
 
 interface FuelStore {
@@ -26,6 +27,10 @@ export const useFuelStore = create<FuelStore>((set) => ({
     try {
       const entries = await getFuelEntries(userId, vehicleId);
       set({ entries });
+      await cacheCollection(CACHE_KEYS.fuel, entries);
+    } catch {
+      const cached = await getCachedCollection<FuelEntry>(CACHE_KEYS.fuel);
+      if (cached) set({ entries: cached });
     } finally {
       set({ isLoading: false });
     }

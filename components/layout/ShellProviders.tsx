@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { KeyboardProvider } from '@/lib/keyboardController';
 import { vars } from 'nativewind';
 import { ToastProvider } from '@/components/ui/toast';
+import { RegisterSheetProvider } from '@/contexts/RegisterSheetContext';
 import { useThemeStore } from '@/store/useThemeStore';
 import { Colors } from '@/constants/colors';
 
@@ -53,7 +54,8 @@ export function ShellProviders({ children }: { children: React.ReactNode }) {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardProvider>
-        <ToastProvider>
+        <RegisterSheetProvider>
+          <ToastProvider>
           <View
             className="flex-1"
             style={[
@@ -63,7 +65,8 @@ export function ShellProviders({ children }: { children: React.ReactNode }) {
           >
             {children}
           </View>
-        </ToastProvider>
+          </ToastProvider>
+        </RegisterSheetProvider>
       </KeyboardProvider>
     </GestureHandlerRootView>
   );

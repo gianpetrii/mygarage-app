@@ -5,6 +5,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react-native';
+import { AppEngineIcon } from '@/components/brand/AppEngineIcon';
 import { KeyboardView } from '@/components/layout/KeyboardView';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,11 +56,12 @@ export default function RegisterScreen() {
   return (
     <KeyboardView>
       <View className="flex-1 justify-center px-6 py-12 bg-background">
-        <View className="mb-10">
-          <Text variant="h2" className="mb-2">
+        <View className="mb-10 items-center gap-3">
+          <AppEngineIcon size={56} />
+          <Text variant="h2" className="mb-0">
             Crear cuenta
           </Text>
-          <Text variant="muted">Completá el formulario para registrarte</Text>
+          <Text variant="muted" className="text-center">Completá el formulario para registrarte</Text>
         </View>
 
         <View className="gap-4">

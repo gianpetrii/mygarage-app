@@ -17,6 +17,7 @@ const firebaseErrorMessages: Record<string, string> = {
   'auth/user-disabled': 'Esta cuenta fue deshabilitada.',
   'auth/requires-recent-login': 'Por seguridad, volvé a iniciar sesión para continuar.',
   'auth/popup-closed-by-user': 'Cerraste la ventana antes de completar el inicio de sesión.',
+  'permission-denied': 'No tenés permiso para acceder a los datos. Revisá las reglas de Firestore en Firebase Console.',
 };
 
 export function getFirebaseErrorMessage(error: unknown): string {

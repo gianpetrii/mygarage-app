@@ -1,11 +1,23 @@
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
+export interface UserPreferences {
+  currency?: string;
+  language?: string;
+  units?: 'metric' | 'imperial';
+  notifications?: {
+    push?: boolean;
+    email?: boolean;
+    reminders?: boolean;
+  };
+}
+
 export interface User {
   id: string;
   email: string;
   name?: string;
   avatarUrl?: string;
   pushToken?: string;
+  preferences?: UserPreferences;
 }
 
 export interface Session {
@@ -66,6 +78,7 @@ export interface Vehicle {
   userId: string;
   make: string;
   model: string;
+  trim?: string;
   year: number;
   vin?: string;
   licensePlate?: string;
@@ -178,6 +191,19 @@ export interface Expense {
   notes?: string;
   createdAt: number;
   updatedAt: number;
+}
+
+export type TimelineEntryType = 'maintenance' | 'fuel' | 'expense';
+
+export interface TimelineEntry {
+  id: string;
+  type: TimelineEntryType;
+  vehicleId: string;
+  date: number;
+  title: string;
+  amount?: number;
+  mileage?: number;
+  source: MaintenanceRecord | FuelEntry | Expense;
 }
 
 export interface DashboardStats {

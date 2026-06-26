@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useThemeStore } from '@/store/useThemeStore';
 import { useNotifications } from '@/hooks/useNotifications';
+import { isIosPersonalTeam } from '@/lib/iosCapabilities';
 import { ShellProviders } from '@/components/layout/ShellProviders';
 import {
   appStackScreenOptions,
@@ -49,10 +50,10 @@ export default function RootLayout() {
   }, [initAuth, initTheme]);
 
   React.useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !isIosPersonalTeam) {
       requestPermissions(user.id);
     }
-  }, [user?.id]);
+  }, [user?.id, requestPermissions]);
 
   return (
     <ShellProviders>

@@ -3,8 +3,10 @@ import {
   Modal,
   View,
   Pressable,
+  Platform,
   type ModalProps,
   type ViewProps,
+  type ViewStyle,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -12,6 +14,8 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/constants/colors';
 import { cn } from '@/lib/utils';
 import { Text } from './text';
 
@@ -71,22 +75,28 @@ function Dialog({ open, onOpenChange, children, modalProps }: DialogProps) {
         {...modalProps}
       >
         <Animated.View
-          className="flex-1 items-center justify-center bg-black/60 px-4"
-          style={{ opacity }}
+          className="flex-1 items-center justify-center px-4"
+          style={[{ backgroundColor: 'rgba(0,0,0,0.55)' }, { opacity }]}
         >
           <Pressable
             className="absolute inset-0"
             onPress={() => onOpenChange(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar diálogo"
           />
-          {children}
+          <View className="w-full max-w-sm" pointerEvents="box-none">
+            {children}
+          </View>
         </Animated.View>
       </Modal>
     </DialogContext.Provider>
   );
 }
 
-function DialogContent({ className, children, ...props }: DialogContentProps) {
+function DialogContent({ className, children, style, ...props }: DialogContentProps) {
   const { open } = React.useContext(DialogContext);
+  const { resolvedScheme } = useColorScheme();
+  const colors = Colors[resolvedScheme];
   const scale = useSharedValue(0.95);
 
   React.useEffect(() => {
@@ -97,13 +107,26 @@ function DialogContent({ className, children, ...props }: DialogContentProps) {
 
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
+  const surfaceStyle: ViewStyle = {
+    backgroundColor: resolvedScheme === 'dark' ? colors.secondary : colors.card,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: resolvedScheme === 'dark' ? 0.35 : 0.12,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 8,
+      },
+      default: {},
+    }),
+  };
+
   return (
     <Animated.View
-      className={cn(
-        'w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-lg',
-        className,
-      )}
-      style={animatedStyle}
+      className={cn('w-full rounded-2xl p-6 overflow-hidden', className)}
+      style={[animatedStyle, surfaceStyle, style]}
       {...props}
     >
       {children}

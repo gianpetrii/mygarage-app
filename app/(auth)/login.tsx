@@ -6,6 +6,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react-native';
+import { AppEngineIcon } from '@/components/brand/AppEngineIcon';
 import Svg, { Path } from 'react-native-svg';
 import { KeyboardView } from '@/components/layout/KeyboardView';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { isIosPersonalTeam } from '@/lib/iosCapabilities';
 import { getFirebaseErrorMessage } from '@/lib/utils';
 import type { LoginForm } from '@/types';
 
@@ -67,7 +69,7 @@ export default function LoginScreen() {
   const [appleAvailable, setAppleAvailable] = React.useState(false);
 
   React.useEffect(() => {
-    if (Platform.OS !== 'ios') return;
+    if (Platform.OS !== 'ios' || isIosPersonalTeam) return;
     AppleAuthentication.isAvailableAsync()
       .then(setAppleAvailable)
       .catch(() => setAppleAvailable(false));
@@ -115,9 +117,10 @@ export default function LoginScreen() {
   return (
     <KeyboardView>
       <View className="flex-1 justify-center px-6 py-12 bg-background">
-        <View className="mb-10">
-          <Text variant="h2" className="mb-2">Bienvenido</Text>
-          <Text variant="muted">Ingresá tu email y contraseña para continuar</Text>
+        <View className="mb-10 items-center gap-3">
+          <AppEngineIcon size={56} />
+          <Text variant="h2" className="mb-0">Bienvenido</Text>
+          <Text variant="muted" className="text-center">Ingresá tu email y contraseña para continuar</Text>
         </View>
 
         <View className="gap-4">

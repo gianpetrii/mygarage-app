@@ -7,6 +7,7 @@ export default function VehiclesLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="[id]" />
       <Stack.Screen name="new" options={modalScreenOptions} />
+      <Stack.Screen name="setup-reminders" options={modalScreenOptions} />
       <Stack.Screen name="edit" options={modalScreenOptions} />
     </Stack>
   );

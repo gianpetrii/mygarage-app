@@ -1,9 +1,16 @@
 import * as React from 'react';
-import { View, Pressable, Image, ScrollView, Alert } from 'react-native';
+import { View, Pressable, Image, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import * as ExpoImagePicker from 'expo-image-picker';
 import { Camera, ImagePlus, X } from 'lucide-react-native';
+import { uploadVehiclePhoto, uploadReceipt, isLocalUri } from '@/lib/uploads';
 import { cn } from '@/lib/utils';
 import { Text } from './text';
+
+interface UploadConfig {
+  userId: string;
+  vehicleId: string;
+  type: 'vehicle' | 'receipt';
+}
 
 interface ImagePickerProps {
   label?: string;
@@ -11,10 +18,56 @@ interface ImagePickerProps {
   onChange: (images: string[]) => void;
   maxImages?: number;
   className?: string;
+  uploadConfig?: UploadConfig;
 }
 
-function ImagePickerField({ label, images, onChange, maxImages = 5, className }: ImagePickerProps) {
+async function resolveUris(
+  uris: string[],
+  uploadConfig?: UploadConfig,
+): Promise<string[]> {
+  if (!uploadConfig) return uris;
+  const resolved: string[] = [];
+  for (const uri of uris) {
+    if (isLocalUri(uri)) {
+      const remote =
+        uploadConfig.type === 'vehicle'
+          ? await uploadVehiclePhoto(uploadConfig.userId, uploadConfig.vehicleId, uri)
+          : await uploadReceipt(uploadConfig.userId, uploadConfig.vehicleId, uri);
+      resolved.push(remote);
+    } else {
+      resolved.push(uri);
+    }
+  }
+  return resolved;
+}
+
+function ImagePickerField({
+  label,
+  images,
+  onChange,
+  maxImages = 5,
+  className,
+  uploadConfig,
+}: ImagePickerProps) {
   const canAdd = images.length < maxImages;
+  const [isUploading, setIsUploading] = React.useState(false);
+
+  const handleNewImages = async (uris: string[]) => {
+    if (!uris.length) return;
+    if (uploadConfig) {
+      setIsUploading(true);
+      try {
+        const remote = await resolveUris(uris, uploadConfig);
+        onChange([...images, ...remote]);
+      } catch {
+        Alert.alert('Error', 'No se pudieron subir las fotos. Intentá de nuevo.');
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      onChange([...images, ...uris]);
+    }
+  };
 
   const pickImage = async () => {
     const { status } = await ExpoImagePicker.requestMediaLibraryPermissionsAsync();
@@ -32,7 +85,7 @@ function ImagePickerField({ label, images, onChange, maxImages = 5, className }:
 
     if (!result.canceled) {
       const uris = result.assets.map((a) => a.uri);
-      onChange([...images, ...uris]);
+      await handleNewImages(uris);
     }
   };
 
@@ -48,7 +101,7 @@ function ImagePickerField({ label, images, onChange, maxImages = 5, className }:
     });
 
     if (!result.canceled) {
-      onChange([...images, result.assets[0].uri]);
+      await handleNewImages([result.assets[0].uri]);
     }
   };
 
@@ -61,13 +114,13 @@ function ImagePickerField({ label, images, onChange, maxImages = 5, className }:
       {label && (
         <Text variant="small" className="font-medium text-foreground">{label}</Text>
       )}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-1">
-        <View className="flex-row gap-2 px-1 py-1">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View className="flex-row gap-3 py-0.5">
           {images.map((uri, index) => (
             <View key={index} className="relative">
               <Image
                 source={{ uri }}
-                className="w-20 h-20 rounded-lg"
+                className="w-20 h-20 rounded-xl"
                 resizeMode="cover"
               />
               <Pressable
@@ -79,24 +132,30 @@ function ImagePickerField({ label, images, onChange, maxImages = 5, className }:
             </View>
           ))}
           {canAdd && (
-            <View className="gap-2">
+            <>
               <Pressable
                 onPress={pickImage}
-                className="w-20 h-[37px] rounded-lg border-2 border-dashed border-border items-center justify-center bg-muted/40"
+                className="w-20 h-20 rounded-xl border-2 border-dashed border-border items-center justify-center bg-muted/40"
               >
-                <ImagePlus size={20} color="#71717a" />
+                <ImagePlus size={22} color="#71717a" />
               </Pressable>
               <Pressable
                 onPress={takePhoto}
-                className="w-20 h-[37px] rounded-lg border-2 border-dashed border-border items-center justify-center bg-muted/40"
+                className="w-20 h-20 rounded-xl border-2 border-dashed border-border items-center justify-center bg-muted/40"
               >
-                <Camera size={20} color="#71717a" />
+                <Camera size={22} color="#71717a" />
               </Pressable>
-            </View>
+            </>
           )}
         </View>
       </ScrollView>
-      <Text variant="muted" className="text-xs">{images.length}/{maxImages} fotos</Text>
+      <Text variant="muted" className="text-xs mt-1">
+        {images.length}/{maxImages} fotos
+        {isUploading ? ' · Subiendo...' : ''}
+      </Text>
+      {isUploading && (
+        <ActivityIndicator size="small" className="mt-1" />
+      )}
     </View>
   );
 }

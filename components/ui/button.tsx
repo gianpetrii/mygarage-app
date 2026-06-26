@@ -50,6 +50,18 @@ const textSizeClasses: Record<ButtonSize, string> = {
   icon: 'text-base',
 };
 
+function wrapTextNodes(
+  children: React.ReactNode,
+  textClassName: string,
+): React.ReactNode {
+  return React.Children.map(children, (child) => {
+    if (typeof child === 'string' || typeof child === 'number') {
+      return <Text className={textClassName}>{child}</Text>;
+    }
+    return child;
+  });
+}
+
 const Button = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
   (
     {
@@ -85,7 +97,7 @@ const Button = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>
             size="small"
             color={variant === 'default' || variant === 'destructive' ? '#fff' : '#18181b'}
           />
-        ) : typeof children === 'string' ? (
+        ) : typeof children === 'string' || typeof children === 'number' ? (
           <Text
             className={cn(
               'font-semibold',
@@ -96,7 +108,10 @@ const Button = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>
             {children}
           </Text>
         ) : (
-          children
+          wrapTextNodes(
+            children,
+            cn('font-semibold', textVariantClasses[variant], textSizeClasses[size]),
+          )
         )}
       </Pressable>
     );

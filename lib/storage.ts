@@ -38,4 +38,6 @@ export const storage = {
 export const STORAGE_KEYS = {
   COLOR_SCHEME: 'color_scheme',
   AUTH_SESSION: 'auth_session',
+  ACTIVE_VEHICLE_ID: 'active_vehicle_id',
+  ONBOARDING_SEEN: 'onboarding_seen',
 } as const;

@@ -5,6 +5,7 @@ import {
   updateMaintenanceRecord as updateInDb,
   deleteMaintenanceRecord as deleteFromDb,
 } from '@/lib/maintenance';
+import { cacheCollection, getCachedCollection, CACHE_KEYS } from '@/lib/offlineCache';
 import type { MaintenanceRecord } from '@/types';
 
 interface MaintenanceStore {
@@ -26,6 +27,10 @@ export const useMaintenanceStore = create<MaintenanceStore>((set) => ({
     try {
       const records = await getMaintenanceRecords(userId, vehicleId);
       set({ records });
+      await cacheCollection(CACHE_KEYS.maintenance, records);
+    } catch {
+      const cached = await getCachedCollection<MaintenanceRecord>(CACHE_KEYS.maintenance);
+      if (cached) set({ records: cached });
     } finally {
       set({ isLoading: false });
     }
