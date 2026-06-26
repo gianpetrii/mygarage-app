@@ -105,7 +105,7 @@ export default function DashboardScreen() {
           {greeting()}
           {user?.name ? `, ${user.name.split(' ')[0]}` : ''}
         </Text>
-        <Text variant="h1">Inicio</Text>
+        {vehicles.length === 0 && <Text variant="h1">Inicio</Text>}
       </View>
 
       {vehicles.length === 0 ? (
