@@ -1,12 +1,14 @@
-import { Linking } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { VEHICLE_MANUALS_CATALOG, type VehicleManualCatalogEntry } from '@/constants/vehicleManuals';
 import { normalizeMake, normalizeModel } from '@/lib/vehicleCatalog';
 import { firebaseStorage } from '@/lib/firebase';
 
-export type ResolvedVehicleManual =
-  | { source: 'user'; url: string; label: string }
-  | { source: 'catalog'; entry: VehicleManualCatalogEntry; url?: string };
+export type ResolvedVehicleManual = {
+  source: 'catalog';
+  entry: VehicleManualCatalogEntry;
+  url?: string;
+};
 
 function matchesYear(entry: VehicleManualCatalogEntry, year: number): boolean {
   if (entry.yearFrom != null && year < entry.yearFrom) return false;
@@ -46,12 +48,7 @@ export async function resolveVehicleManual(
   make: string,
   model: string,
   year: number,
-  userManualUrl?: string,
 ): Promise<ResolvedVehicleManual | null> {
-  if (userManualUrl?.trim()) {
-    return { source: 'user', url: userManualUrl.trim(), label: 'Manual del vehículo' };
-  }
-
   const entry = findCatalogManual(make, model, year);
   if (!entry) return null;
 
@@ -63,30 +60,21 @@ export async function resolveVehicleManual(
   }
 }
 
-export function getManualMenuLabel(
-  resolved: ResolvedVehicleManual | null,
-  isLoading: boolean,
-): string {
-  if (isLoading) return 'Cargando manual...';
-  if (!resolved) return 'Agregar manual';
-  if (resolved.source === 'catalog') {
-    return resolved.url ? 'Abrir manual' : 'Manual no disponible';
-  }
-  return 'Abrir manual';
-}
-
 export async function openVehicleManual(
   make: string,
   model: string,
   year: number,
-  userManualUrl?: string,
-): Promise<'opened' | 'unavailable' | 'missing'> {
-  const resolved = await resolveVehicleManual(make, model, year, userManualUrl);
-  if (!resolved) return 'missing';
-  if (!resolved.url) return 'unavailable';
+): Promise<'opened' | 'unavailable'> {
+  const resolved = await resolveVehicleManual(make, model, year);
+  if (!resolved?.url) return 'unavailable';
 
-  const canOpen = await Linking.canOpenURL(resolved.url);
-  if (!canOpen) return 'unavailable';
-  await Linking.openURL(resolved.url);
-  return 'opened';
+  try {
+    await WebBrowser.openBrowserAsync(resolved.url, {
+      enableBarCollapsing: true,
+      showTitle: true,
+    });
+    return 'opened';
+  } catch {
+    return 'unavailable';
+  }
 }

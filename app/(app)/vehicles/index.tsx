@@ -6,13 +6,11 @@ import { Text } from '@/components/ui/text';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AddVehicleCard, VehicleSummaryCard } from '@/components/vehicle/VehicleSummaryCard';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useActiveVehicle } from '@/hooks/useActiveVehicle';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
 
 export default function VehiclesListScreen() {
   const { user } = useAuthStore();
   const { vehicles, isLoading, fetchVehicles } = useVehiclesStore();
-  const { activeVehicle, setActiveVehicle } = useActiveVehicle();
   const [refreshing, setRefreshing] = React.useState(false);
 
   React.useEffect(() => {
@@ -23,12 +21,6 @@ export default function VehiclesListScreen() {
     setRefreshing(true);
     if (user) await fetchVehicles(user.id);
     setRefreshing(false);
-  };
-
-  const openVehicle = async (vehicleId: string) => {
-    const vehicle = vehicles.find((v) => v.id === vehicleId);
-    if (vehicle) await setActiveVehicle(vehicle);
-    router.push(`/(app)/vehicles/${vehicleId}`);
   };
 
   return (
@@ -58,9 +50,7 @@ export default function VehiclesListScreen() {
               key={vehicle.id}
               vehicle={vehicle}
               showPhoto
-              showActiveBadge
-              isActive={activeVehicle?.id === vehicle.id}
-              onPress={() => openVehicle(vehicle.id)}
+              onPress={() => router.push(`/(app)/vehicles/${vehicle.id}`)}
             />
           ))}
           <AddVehicleCard onPress={() => router.push('/(app)/vehicles/new')} />

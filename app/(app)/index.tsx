@@ -7,6 +7,7 @@ import { Screen } from '@/components/layout/Screen';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { VehicleIdentityHeader } from '@/components/vehicle/VehicleIdentityHeader';
+import { VehicleManualCard } from '@/components/vehicle/VehicleManualCard';
 import { ReminderHero } from '@/components/reminders/ReminderHero';
 import { ReminderCard } from '@/components/reminders/ReminderCard';
 import { TimelineItem } from '@/components/timeline/TimelineItem';
@@ -14,6 +15,7 @@ import { SetupChecklist } from '@/components/home/SetupChecklist';
 import { QuickActions } from '@/components/home/QuickActions';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
+import { useVehicleManual } from '@/hooks/useVehicleManual';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useRemindersStore } from '@/store/useRemindersStore';
 import { useMaintenanceStore } from '@/store/useMaintenanceStore';
@@ -25,6 +27,7 @@ import { storage, STORAGE_KEYS } from '@/lib/storage';
 export default function DashboardScreen() {
   const { user } = useAuthStore();
   const { vehicles, activeVehicle, fetchVehicles } = useActiveVehicle();
+  const { manualResolved, manualLoading, openManual } = useVehicleManual(activeVehicle);
   const { reminders, fetchReminders, completeReminder } = useRemindersStore();
   const { fetchRecords } = useMaintenanceStore();
   const { fetchEntries } = useFuelStore();
@@ -125,6 +128,14 @@ export default function DashboardScreen() {
       ) : (
         <View className="gap-5 mt-2">
           <VehicleIdentityHeader />
+
+          {activeVehicle && (
+            <VehicleManualCard
+              resolved={manualResolved}
+              isLoading={manualLoading}
+              onOpen={openManual}
+            />
+          )}
 
           {heroReminder ? (
             <ReminderHero

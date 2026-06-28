@@ -11,17 +11,16 @@ import {
   Edit,
   Trash2,
   Share2,
-  BookOpen,
   Gauge,
   MoreVertical,
 } from 'lucide-react-native';
 import { VehiclePhotoGallery } from '@/components/vehicle/VehiclePhotoGallery';
 import { VehicleSpecsPanel } from '@/components/vehicle/VehicleSpecsPanel';
+import { VehicleManualCard } from '@/components/vehicle/VehicleManualCard';
 import { KeyboardSheet } from '@/components/layout/KeyboardSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { MileageInput } from '@/components/vehicle/MileageInput';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ReminderCard } from '@/components/reminders/ReminderCard';
@@ -33,13 +32,8 @@ import { useExpensesStore } from '@/store/useExpensesStore';
 import { useRemindersStore } from '@/store/useRemindersStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTimeline } from '@/hooks/useTimeline';
+import { useVehicleManual } from '@/hooks/useVehicleManual';
 import { buildVehicleExportHtml, shareVehicleExport } from '@/lib/exportVehicleHistory';
-import {
-  getManualMenuLabel,
-  openVehicleManual,
-  resolveVehicleManual,
-  type ResolvedVehicleManual,
-} from '@/lib/vehicleManuals';
 import { parseGroupedInteger } from '@/lib/numberFormat';
 import { Separator } from '@/components/ui/separator';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -56,18 +50,15 @@ export default function VehicleDetailScreen() {
 
   const [actionsOpen, setActionsOpen] = React.useState(false);
   const [kmDialogOpen, setKmDialogOpen] = React.useState(false);
-  const [manualDialogOpen, setManualDialogOpen] = React.useState(false);
   const [kmValue, setKmValue] = React.useState('');
-  const [manualUrl, setManualUrl] = React.useState('');
   const [isSavingKm, setIsSavingKm] = React.useState(false);
   const [isExporting, setIsExporting] = React.useState(false);
-  const [manualResolved, setManualResolved] = React.useState<ResolvedVehicleManual | null>(null);
-  const [manualLoading, setManualLoading] = React.useState(false);
 
   const { isDark } = useColorScheme();
   const iconColor = isDark ? '#fafafa' : '#18181b';
 
   const vehicle = vehicles.find((v) => v.id === id);
+  const { manualResolved, manualLoading, openManual } = useVehicleManual(vehicle);
 
   React.useEffect(() => {
     if (!user || !id) return;
@@ -77,38 +68,10 @@ export default function VehicleDetailScreen() {
     fetchReminders(user.id, id);
   }, [user, id]);
 
-  React.useEffect(() => {
-    if (vehicle) {
-      setManualUrl(vehicle.manualUrl ?? '');
-    }
-  }, [vehicle?.manualUrl]);
-
   const { timeline: timelineEntries } = useTimeline({
     vehicleId: id,
     limit: 5,
   });
-
-  React.useEffect(() => {
-    if (!vehicle) return;
-    let cancelled = false;
-    (async () => {
-      setManualLoading(true);
-      try {
-        const resolved = await resolveVehicleManual(
-          vehicle.make,
-          vehicle.model,
-          vehicle.year,
-          vehicle.manualUrl,
-        );
-        if (!cancelled) setManualResolved(resolved);
-      } finally {
-        if (!cancelled) setManualLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [vehicle?.make, vehicle?.model, vehicle?.year, vehicle?.manualUrl]);
 
   if (!vehicle) {
     return (
@@ -160,37 +123,6 @@ export default function VehicleDetailScreen() {
     } finally {
       setIsSavingKm(false);
     }
-  };
-
-  const saveManualUrl = async () => {
-    try {
-      await updateVehicle(id, { manualUrl: manualUrl.trim() || undefined });
-      setManualDialogOpen(false);
-    } catch {
-      Alert.alert('Error', 'No se pudo guardar el manual');
-    }
-  };
-
-  const openManual = async () => {
-    const result = await openVehicleManual(
-      vehicle.make,
-      vehicle.model,
-      vehicle.year,
-      vehicle.manualUrl,
-    );
-    if (result === 'opened') return;
-    if (result === 'unavailable') {
-      Alert.alert(
-        'Manual no disponible',
-        'Todavía no tenemos el manual de este modelo en el catálogo. Podés pegar un enlace propio.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Agregar enlace', onPress: () => setManualDialogOpen(true) },
-        ],
-      );
-      return;
-    }
-    setManualDialogOpen(true);
   };
 
   const handleExport = async () => {
@@ -280,6 +212,12 @@ export default function VehicleDetailScreen() {
         contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
+        <VehicleManualCard
+          resolved={manualResolved}
+          isLoading={manualLoading}
+          onOpen={openManual}
+        />
+
         {activeReminders.length > 0 && (
           <View className="gap-3">
             <View className="flex-row items-center justify-between">
@@ -348,25 +286,6 @@ export default function VehicleDetailScreen() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={manualDialogOpen} onOpenChange={setManualDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Manual del vehículo</DialogTitle>
-          </DialogHeader>
-          <Input
-            label="URL del manual (PDF o web)"
-            value={manualUrl}
-            onChangeText={setManualUrl}
-            placeholder="https://..."
-            autoCapitalize="none"
-            keyboardType="url"
-          />
-          <Button onPress={saveManualUrl} className="mt-2">
-            Guardar
-          </Button>
-        </DialogContent>
-      </Dialog>
-
       <KeyboardSheet visible={actionsOpen} onClose={() => setActionsOpen(false)}>
         <Text variant="h3" className="mb-4">
           Opciones del vehículo
@@ -385,14 +304,6 @@ export default function VehicleDetailScreen() {
             label={isExporting ? 'Exportando...' : 'Exportar historial'}
             onPress={handleExport}
             disabled={isExporting}
-          />
-          <ActionSheetRow
-            icon={BookOpen}
-            label={getManualMenuLabel(manualResolved, manualLoading)}
-            onPress={() => {
-              setActionsOpen(false);
-              openManual();
-            }}
           />
           <Separator className="my-2" />
           <ActionSheetRow
