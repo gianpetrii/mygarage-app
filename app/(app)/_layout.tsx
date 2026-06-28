@@ -76,6 +76,7 @@ export default function AppLayout() {
         <Tabs.Screen name="reminders" options={{ href: null }} />
         <Tabs.Screen name="guides" options={{ href: null }} />
         <Tabs.Screen name="onboarding" options={{ href: null }} />
+        <Tabs.Screen name="setup-reminders" options={{ href: null }} />
       </Tabs>
       <QuickRegisterSheet />
     </>

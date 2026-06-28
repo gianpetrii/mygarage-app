@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { View, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { Wrench, Fuel, DollarSign, Bell, Plus } from 'lucide-react-native';
+import { Wrench, DollarSign, Bell, Plus } from 'lucide-react-native';
 import { KeyboardSheet } from '@/components/layout/KeyboardSheet';
 import { Text } from '@/components/ui/text';
 import { useRegisterSheet } from '@/contexts/RegisterSheetContext';
@@ -15,13 +15,6 @@ const ACTIONS = [
     description: 'Mantenimiento o reparación',
     icon: Wrench,
     route: '/(app)/add/service',
-  },
-  {
-    id: 'fuel',
-    label: 'Nafta',
-    description: 'Carga de combustible',
-    icon: Fuel,
-    route: '/(app)/add/fuel',
   },
   {
     id: 'expense',

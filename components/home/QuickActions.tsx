@@ -1,14 +1,13 @@
 import * as React from 'react';
 import { View, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { Wrench, Fuel, Bell } from 'lucide-react-native';
+import { Wrench, Bell } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const ACTIONS = [
   { id: 'service', label: 'Service', icon: Wrench, route: '/(app)/add/service' },
-  { id: 'fuel', label: 'Nafta', icon: Fuel, route: '/(app)/add/fuel' },
   { id: 'reminder', label: 'Recordatorio', icon: Bell, route: '/(app)/add/reminder' },
 ] as const;
 

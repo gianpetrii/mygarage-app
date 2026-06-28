@@ -81,7 +81,7 @@ export default function NewVehicleScreen() {
       const newVehicle = useVehiclesStore.getState().vehicles.find((v) => v.id === vehicleId);
       if (newVehicle) await setActiveVehicle(newVehicle);
       router.replace({
-        pathname: '/(app)/vehicles/setup-reminders',
+        pathname: '/(app)/setup-reminders',
         params: { vehicleId },
       });
     } catch {

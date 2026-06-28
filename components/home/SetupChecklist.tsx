@@ -8,6 +8,7 @@ interface SetupChecklistProps {
   vehicle: Vehicle;
   hasReminders: boolean;
   hasHistory: boolean;
+  skipReminders?: boolean;
   onSetupReminders: () => void;
   onRegisterService: () => void;
   onAddPhoto: () => void;
@@ -24,7 +25,7 @@ const ITEMS = [
     key: 'history' as const,
     icon: Wrench,
     title: 'Registrar primer movimiento',
-    description: 'Service, nafta o gasto',
+    description: 'Service o gasto',
   },
   {
     key: 'photo' as const,
@@ -38,6 +39,7 @@ function SetupChecklist({
   vehicle,
   hasReminders,
   hasHistory,
+  skipReminders = false,
   onSetupReminders,
   onRegisterService,
   onAddPhoto,
@@ -48,7 +50,10 @@ function SetupChecklist({
     photo: (vehicle.photos?.length ?? 0) > 0,
   };
 
-  const pending = ITEMS.filter((item) => !completed[item.key]);
+  const pending = ITEMS.filter((item) => {
+    if (item.key === 'reminders' && skipReminders) return false;
+    return !completed[item.key];
+  });
   if (pending.length === 0) return null;
 
   const handlers = {

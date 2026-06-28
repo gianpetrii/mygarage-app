@@ -96,7 +96,7 @@ export default function DashboardScreen() {
   const openSetupReminders = () => {
     if (!activeVehicle) return;
     router.push({
-      pathname: '/(app)/vehicles/setup-reminders',
+      pathname: '/(app)/setup-reminders',
       params: { vehicleId: activeVehicle.id },
     });
   };
@@ -166,6 +166,7 @@ export default function DashboardScreen() {
               vehicle={activeVehicle}
               hasReminders={hasReminders}
               hasHistory={hasHistory}
+              skipReminders={!hasReminders}
               onSetupReminders={openSetupReminders}
               onRegisterService={() =>
                 router.push({

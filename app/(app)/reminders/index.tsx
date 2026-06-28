@@ -58,7 +58,7 @@ export default function RemindersListScreen() {
           onAction={() => {
             if (activeVehicle) {
               router.push({
-                pathname: '/(app)/vehicles/setup-reminders',
+                pathname: '/(app)/setup-reminders',
                 params: { vehicleId: activeVehicle.id },
               });
             } else {
