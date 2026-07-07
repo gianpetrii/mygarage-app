@@ -11,19 +11,26 @@ export async function scheduleReminderNotification(reminder: ServiceReminder): P
     return null;
   }
 
-  const id = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'Recordatorio — CarLogger',
-      body: reminder.title,
-      data: { reminderId: reminder.id, vehicleId: reminder.vehicleId },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: triggerDate,
-    },
-  });
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') return null;
 
-  return id;
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Recordatorio — CarLogger',
+        body: reminder.title,
+        data: { reminderId: reminder.id, vehicleId: reminder.vehicleId },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate,
+      },
+    });
+
+    return id;
+  } catch {
+    return null;
+  }
 }
 
 export async function cancelReminderNotification(notificationId: string): Promise<void> {

@@ -1,16 +1,16 @@
-import { Tabs } from 'expo-router';
-import { Home, History, User } from 'lucide-react-native';
+import { Tabs, router } from 'expo-router';
+import { Home, Bell, User } from 'lucide-react-native';
 import { AppEngineIcon } from '@/components/brand/AppEngineIcon';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { CenterTabButton } from '@/components/navigation/CenterTabButton';
-import { useRegisterSheet } from '@/contexts/RegisterSheetContext';
 import { QuickRegisterSheet } from '@/components/register/QuickRegisterSheet';
+import { useActiveVehicle } from '@/hooks/useActiveVehicle';
 
 export default function AppLayout() {
   const { resolvedScheme } = useColorScheme();
   const colors = Colors[resolvedScheme];
-  const { open } = useRegisterSheet();
+  const { activeVehicle } = useActiveVehicle();
 
   return (
     <>
@@ -40,19 +40,26 @@ export default function AppLayout() {
           }}
         />
         <Tabs.Screen
-          name="history"
+          name="reminders"
           options={{
-            title: 'Historial',
-            tabBarIcon: ({ color, size }) => <History size={size} color={color} />,
+            title: 'Recordatorios',
+            tabBarIcon: ({ color, size }) => <Bell size={size} color={color} />,
           }}
         />
         <Tabs.Screen
           name="register"
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              router.push({
+                pathname: '/(app)/add/service',
+                params: activeVehicle ? { vehicleId: activeVehicle.id } : undefined,
+              });
+            },
+          }}
           options={{
             title: '',
-            tabBarButton: (props) => (
-              <CenterTabButton onPress={open} {...props} />
-            ),
+            tabBarButton: (props) => <CenterTabButton {...props} />,
           }}
         />
         <Tabs.Screen
@@ -70,10 +77,10 @@ export default function AppLayout() {
           }}
         />
         {/* Stacks ocultos del tab bar */}
+        <Tabs.Screen name="history" options={{ href: null }} />
         <Tabs.Screen name="maintenance" options={{ href: null }} />
         <Tabs.Screen name="fuel" options={{ href: null }} />
         <Tabs.Screen name="add" options={{ href: null }} />
-        <Tabs.Screen name="reminders" options={{ href: null }} />
         <Tabs.Screen name="guides" options={{ href: null }} />
         <Tabs.Screen name="onboarding" options={{ href: null }} />
         <Tabs.Screen name="setup-reminders" options={{ href: null }} />

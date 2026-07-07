@@ -71,7 +71,7 @@ export default function DashboardScreen() {
     reminders.filter((r) => !activeVehicle || r.vehicleId === activeVehicle.id),
   );
   const heroReminder = vehicleReminders[0];
-  const nextReminders = vehicleReminders.slice(1, 4);
+  const nextReminders = vehicleReminders.slice(1, 3);
   const hasReminders = vehicleReminders.length > 0;
 
   const { timeline } = useTimeline({
@@ -141,6 +141,7 @@ export default function DashboardScreen() {
             <ReminderHero
               reminder={heroReminder}
               isOverdue={isReminderOverdue(heroReminder, now)}
+              currentMileage={activeVehicle?.mileage}
               onViewAll={() => router.push('/(app)/reminders')}
               onComplete={() => handleComplete(heroReminder.id)}
             />
@@ -161,12 +162,11 @@ export default function DashboardScreen() {
 
           <QuickActions />
 
-          {activeVehicle && (
+          {activeVehicle && !hasReminders && (
             <SetupChecklist
               vehicle={activeVehicle}
               hasReminders={hasReminders}
               hasHistory={hasHistory}
-              skipReminders={!hasReminders}
               onSetupReminders={openSetupReminders}
               onRegisterService={() =>
                 router.push({
@@ -193,6 +193,7 @@ export default function DashboardScreen() {
                   key={r.id}
                   reminder={r}
                   isOverdue={isReminderOverdue(r, now)}
+                  currentMileage={activeVehicle?.mileage}
                   compact
                   onPress={() => router.push(`/(app)/reminders/${r.id}`)}
                 />

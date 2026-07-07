@@ -7,6 +7,7 @@ import {
   completeReminder as completeInDb,
 } from '@/lib/reminders';
 import { cacheCollection, getCachedCollection, CACHE_KEYS } from '@/lib/offlineCache';
+import { recalculateAfterComplete } from '@/lib/reminderUtils';
 import type { ServiceReminder } from '@/types';
 
 interface RemindersStore {
@@ -20,7 +21,7 @@ interface RemindersStore {
   reset: () => void;
 }
 
-export const useRemindersStore = create<RemindersStore>((set) => ({
+export const useRemindersStore = create<RemindersStore>((set, get) => ({
   reminders: [],
   isLoading: false,
 
@@ -62,19 +63,15 @@ export const useRemindersStore = create<RemindersStore>((set) => ({
   },
 
   completeReminder: async (id, completedDate, completedMileage) => {
-    await completeInDb(id, completedDate, completedMileage);
+    const reminder = get().reminders.find((r) => r.id === id);
+    if (!reminder) return;
+
+    const updates = recalculateAfterComplete(reminder, completedDate, completedMileage);
+    await completeInDb(id, updates);
     const now = Date.now();
     set((state) => ({
       reminders: state.reminders.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              isCompleted: true,
-              lastCompletedDate: completedDate,
-              lastCompletedMileage: completedMileage,
-              updatedAt: now,
-            }
-          : r,
+        r.id === id ? { ...r, ...updates, updatedAt: now } : r,
       ),
     }));
   },

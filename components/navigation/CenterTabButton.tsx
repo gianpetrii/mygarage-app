@@ -5,19 +5,19 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 
 interface CenterTabButtonProps extends ViewProps {
-  onPress?: () => void;
+  onPress?: (event: unknown) => void;
 }
 
-function CenterTabButton({ onPress, ...props }: CenterTabButtonProps) {
+function CenterTabButton({ onPress, ...viewProps }: CenterTabButtonProps) {
   const { resolvedScheme } = useColorScheme();
   const colors = Colors[resolvedScheme];
 
   return (
-    <View className="flex-1 items-center justify-center" {...props}>
+    <View className="flex-1 items-center justify-center" {...viewProps}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel="Registrar"
+        accessibilityLabel="Nuevo service"
         className="items-center justify-center"
         style={{
           width: 56,

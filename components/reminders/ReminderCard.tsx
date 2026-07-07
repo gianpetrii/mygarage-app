@@ -5,12 +5,14 @@ import { es } from 'date-fns/locale';
 import { AlertTriangle, ChevronRight } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { REMINDER_PRIORITY_COLORS } from '@/constants/domain';
+import { isReminderMileageDue } from '@/lib/reminderUtils';
 import type { ServiceReminder } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface ReminderCardProps {
   reminder: ServiceReminder;
   isOverdue?: boolean;
+  currentMileage?: number;
   onPress?: () => void;
   onComplete?: () => void;
   compact?: boolean;
@@ -19,11 +21,15 @@ interface ReminderCardProps {
 function ReminderCard({
   reminder,
   isOverdue = false,
+  currentMileage,
   onPress,
   onComplete,
   compact = false,
 }: ReminderCardProps) {
   const priorityColor = REMINDER_PRIORITY_COLORS[reminder.priority];
+  const mileageDue =
+    currentMileage != null && isReminderMileageDue(reminder, currentMileage);
+  const highlight = isOverdue || mileageDue;
 
   return (
     <Pressable
@@ -31,27 +37,30 @@ function ReminderCard({
       disabled={!onPress}
       className={cn(
         'rounded-xl border p-4 gap-2',
-        isOverdue
+        highlight
           ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950'
           : 'border-border bg-card',
         compact && 'p-3',
       )}
     >
       <View className="flex-row items-start gap-2">
-        <AlertTriangle size={18} color={isOverdue ? '#ef4444' : priorityColor} />
-        <View className="flex-1">
+        <AlertTriangle size={18} color={highlight ? '#ef4444' : priorityColor} />
+        <View className="flex-1 gap-0.5">
           <Text className="font-semibold text-foreground" numberOfLines={2}>
             {reminder.title}
           </Text>
           {reminder.targetDate && (
-            <Text variant="muted" className="text-xs mt-0.5">
+            <Text variant="muted" className="text-xs">
               {isOverdue ? 'Venció el ' : 'Vence el '}
               {format(reminder.targetDate, "d 'de' MMMM yyyy", { locale: es })}
             </Text>
           )}
           {reminder.targetMileage != null && (
             <Text variant="muted" className="text-xs">
-              A los {reminder.targetMileage.toLocaleString()} km
+              Objetivo: {reminder.targetMileage.toLocaleString()} km
+              {currentMileage != null
+                ? ` · Actual: ${currentMileage.toLocaleString()} km`
+                : ''}
             </Text>
           )}
         </View>

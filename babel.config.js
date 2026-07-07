@@ -1,16 +1,16 @@
 module.exports = function (api) {
-  api.cache(true);
+  api.cache.using(() => require('react-native-reanimated/package.json').version);
   return {
     presets: [
       ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
     ],
     plugins: [
-      require('./node_modules/react-native-css-interop/dist/babel-plugin').default,
+      require('react-native-css-interop/dist/babel-plugin').default,
       [
         '@babel/plugin-transform-react-jsx',
         { runtime: 'automatic', importSource: 'react-native-css-interop' },
       ],
-      'react-native-reanimated/plugin',
+      require.resolve('react-native-reanimated/plugin'),
     ],
   };
 };

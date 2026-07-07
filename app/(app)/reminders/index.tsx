@@ -33,39 +33,51 @@ export default function RemindersListScreen() {
     setRefreshing(false);
   };
 
+  const openSetup = () => {
+    if (!activeVehicle) return;
+    router.push({
+      pathname: '/(app)/setup-reminders',
+      params: { vehicleId: activeVehicle.id },
+    });
+  };
+
+  const openAdd = () => {
+    if (!activeVehicle) return;
+    router.push({
+      pathname: '/(app)/reminders/add-catalog',
+      params: { vehicleId: activeVehicle.id },
+    });
+  };
+
   const now = Date.now();
   const filtered = sortRemindersByUrgency(
     reminders.filter((r) => !activeVehicle || r.vehicleId === activeVehicle.id),
   );
+  const hasReminders = filtered.length > 0;
 
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View className="flex-row items-center justify-between mb-2">
         <Text variant="h1">Recordatorios</Text>
-        <Button size="sm" onPress={() => router.push('/(app)/add/reminder')}>
-          Nuevo
-        </Button>
+        {activeVehicle && hasReminders && (
+          <Button size="sm" onPress={openAdd}>
+            Agregar
+          </Button>
+        )}
       </View>
 
       <VehicleIdentityHeader />
 
       {filtered.length === 0 ? (
-        <EmptyState
-          icon={Bell}
-          title="Sin recordatorios"
-          description="Configurá VTV, service y seguro para este vehículo"
-          actionLabel="Configurar recordatorios"
-          onAction={() => {
-            if (activeVehicle) {
-              router.push({
-                pathname: '/(app)/setup-reminders',
-                params: { vehicleId: activeVehicle.id },
-              });
-            } else {
-              router.push('/(app)/add/reminder');
-            }
-          }}
-        />
+        <View className="mt-4">
+          <EmptyState
+            icon={Bell}
+            title="Sin recordatorios activos"
+            description="Configurá los avisos que te sirven para este vehículo"
+            actionLabel="Empezar configuración"
+            onAction={openSetup}
+          />
+        </View>
       ) : (
         <View className="gap-3 mt-4">
           {filtered.map((r) => (
@@ -73,6 +85,7 @@ export default function RemindersListScreen() {
               key={r.id}
               reminder={r}
               isOverdue={isReminderOverdue(r, now)}
+              currentMileage={activeVehicle?.mileage}
               onPress={() => router.push(`/(app)/reminders/${r.id}`)}
             />
           ))}

@@ -1,14 +1,14 @@
 import * as React from 'react';
 import { View, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { Wrench, Bell } from 'lucide-react-native';
+import { Wrench, BookOpen } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const ACTIONS = [
   { id: 'service', label: 'Service', icon: Wrench, route: '/(app)/add/service' },
-  { id: 'reminder', label: 'Recordatorio', icon: Bell, route: '/(app)/add/reminder' },
+  { id: 'guides', label: 'Guías', icon: BookOpen, route: '/(app)/guides' },
 ] as const;
 
 function QuickActions() {
@@ -17,6 +17,10 @@ function QuickActions() {
   const iconColor = isDark ? '#fafafa' : '#18181b';
 
   const navigate = (route: string) => {
+    if (route === '/(app)/guides') {
+      router.push('/(app)/guides');
+      return;
+    }
     const params = activeVehicle ? { vehicleId: activeVehicle.id } : undefined;
     router.push({ pathname: route as never, params });
   };

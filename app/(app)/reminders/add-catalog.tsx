@@ -1,7 +1,6 @@
 import * as React from 'react';
-import { View, Alert } from 'react-native';
+import { Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Bell } from 'lucide-react-native';
 import { FormScreen } from '@/components/layout/FormScreen';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
@@ -11,48 +10,63 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
 import { useRemindersStore } from '@/store/useRemindersStore';
 import {
-  DEFAULT_SETUP_TEMPLATE_IDS,
+  ALIGNMENT_TEMPLATE_ID,
   buildDefaultDrafts,
   createRemindersFromDrafts,
+  getActiveTemplateIdsForVehicle,
   type ReminderDraft,
   type ReminderTemplateId,
 } from '@/lib/reminderUtils';
 import { buildSelectedTemplateIds, validateDrafts } from '@/lib/reminderFlow';
-import { requestNotificationPermissions, scheduleReminderNotification } from '@/lib/reminderScheduling';
+import { scheduleReminderNotification } from '@/lib/reminderScheduling';
 import { auth } from '@/lib/firebase';
 
-type Step = 'permissions' | 'select' | 'review';
+type Step = 'select' | 'review';
 
-export default function SetupRemindersScreen() {
-  const { vehicleId: vehicleIdParam } = useLocalSearchParams<{ vehicleId: string }>();
+export default function AddRemindersCatalogScreen() {
+  const { vehicleId: vehicleIdParam } = useLocalSearchParams<{ vehicleId?: string }>();
   const vehicleId = Array.isArray(vehicleIdParam) ? vehicleIdParam[0] : vehicleIdParam;
   const { user } = useAuthStore();
   const { vehicles } = useVehiclesStore();
-  const { addReminder } = useRemindersStore();
-  const [step, setStep] = React.useState<Step>('permissions');
-  const [selected, setSelected] = React.useState<Set<ReminderTemplateId>>(
-    () => new Set(DEFAULT_SETUP_TEMPLATE_IDS),
-  );
+  const { reminders, addReminder, fetchReminders } = useRemindersStore();
+  const [step, setStep] = React.useState<Step>('select');
+  const [selected, setSelected] = React.useState<Set<ReminderTemplateId>>(() => new Set());
   const [includeAlignmentWithTires, setIncludeAlignmentWithTires] = React.useState(true);
   const [drafts, setDrafts] = React.useState<ReminderDraft[]>([]);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const vehicle = vehicles.find((v) => v.id === vehicleId);
+  const vehicle = vehicles.find((v) => v.id === vehicleId) ?? vehicles[0];
 
-  const goHome = () => {
-    router.replace('/(app)');
+  React.useEffect(() => {
+    const userId = user?.id ?? auth.currentUser?.uid;
+    if (userId) fetchReminders(userId);
+  }, [user, fetchReminders]);
+
+  const goBack = () => {
+    router.back();
   };
+
+  const activeTemplateIds = vehicle
+    ? new Set(getActiveTemplateIdsForVehicle(reminders, vehicle.id))
+    : new Set<ReminderTemplateId>();
+
+  const hiddenAlignment =
+    activeTemplateIds.has(ALIGNMENT_TEMPLATE_ID) ||
+    (selected.has('tires') && includeAlignmentWithTires);
+
+  const hiddenTemplateIds = new Set(activeTemplateIds);
+  if (hiddenAlignment) hiddenTemplateIds.add(ALIGNMENT_TEMPLATE_ID);
 
   const toggle = (id: ReminderTemplateId) => {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
-        if (id === TIRES_TEMPLATE_ID) setIncludeAlignmentWithTires(false);
+        if (id === 'tires') setIncludeAlignmentWithTires(false);
       } else {
         next.add(id);
-        if (id === TIRES_TEMPLATE_ID) setIncludeAlignmentWithTires(true);
+        if (id === 'tires') setIncludeAlignmentWithTires(true);
       }
       return next;
     });
@@ -61,22 +75,20 @@ export default function SetupRemindersScreen() {
   const openCustomReminder = () => {
     if (!vehicle) return;
     router.push({
-      pathname: '/(app)/setup-reminders/custom',
-      params: { vehicleId: vehicle.id },
+      pathname: '/(app)/reminders/custom',
+      params: { vehicleId: vehicle.id, returnTo: 'reminders' },
     });
-  };
-
-  const handlePermissionsContinue = async () => {
-    await requestNotificationPermissions();
-    setStep('select');
   };
 
   const handleSelectContinue = () => {
     if (!vehicle) return;
 
-    const templateIds = buildSelectedTemplateIds(selected, includeAlignmentWithTires);
+    const templateIds = buildSelectedTemplateIds(selected, includeAlignmentWithTires).filter(
+      (id) => !activeTemplateIds.has(id),
+    );
+
     if (templateIds.length === 0) {
-      goHome();
+      Alert.alert('Sin selección', 'Elegí al menos un recordatorio nuevo o usá el personalizado.');
       return;
     }
 
@@ -110,24 +122,21 @@ export default function SetupRemindersScreen() {
         scheduleReminderNotification,
       );
 
-      if (count === 0 && drafts.length > 0) {
-        Alert.alert(
-          'Error',
-          'No se pudieron guardar los recordatorios. Revisá tu conexión e intentá de nuevo.',
-        );
+      if (count === 0) {
+        Alert.alert('Error', 'No se pudieron guardar los recordatorios.');
         return;
       }
 
       if (failed.length > 0) {
         Alert.alert(
-          'Algunos recordatorios no se guardaron',
-          `Se crearon ${count} de ${drafts.length}. Podés agregar el resto después.`,
+          'Algunos no se guardaron',
+          `Se agregaron ${count} de ${drafts.length}. Podés reintentar con los que faltan.`,
         );
       }
 
-      router.replace('/(app)/reminders');
+      router.back();
     } catch {
-      Alert.alert('Error', 'No se pudieron crear los recordatorios. Intentá de nuevo.');
+      Alert.alert('Error', 'No se pudieron crear los recordatorios.');
     } finally {
       setIsLoading(false);
     }
@@ -135,47 +144,24 @@ export default function SetupRemindersScreen() {
 
   if (!vehicle) {
     return (
-      <FormScreen title="Recordatorios" onClose={goHome}>
-        <Text variant="muted">Vehículo no encontrado</Text>
-        <Button onPress={goHome}>Ir al inicio</Button>
+      <FormScreen title="Agregar recordatorio" onClose={goBack}>
+        <Text variant="muted">No hay vehículos cargados</Text>
+        <Button onPress={goBack}>Volver</Button>
       </FormScreen>
     );
   }
 
   const vehicleLabel = `${vehicle.make} ${vehicle.model} ${vehicle.year}`;
-
-  if (step === 'permissions') {
-    return (
-      <FormScreen title="Avisos a tiempo" onClose={goHome}>
-        <Text variant="muted" className="text-sm -mt-2">
-          {vehicleLabel}
-        </Text>
-
-        <View className="items-center gap-4 rounded-2xl border border-border bg-card p-6">
-          <View className="h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-            <Bell size={28} color="#18181b" />
-          </View>
-          <Text className="text-center text-base font-medium text-foreground">
-            Activá las notificaciones para que te avisemos antes de que venza la VTV, el service, la
-            patente y otros mantenimientos.
-          </Text>
-        </View>
-
-        <Button onPress={handlePermissionsContinue} size="lg">
-          Activar notificaciones
-        </Button>
-        <Button variant="ghost" onPress={() => setStep('select')}>
-          Configurar sin notificaciones
-        </Button>
-      </FormScreen>
-    );
-  }
+  const availableCount =
+    buildSelectedTemplateIds(selected, includeAlignmentWithTires).filter(
+      (id) => !activeTemplateIds.has(id),
+    ).length;
 
   if (step === 'select') {
     return (
-      <FormScreen title="Elegí tus avisos" onClose={goHome}>
+      <FormScreen title="Agregar recordatorio" onClose={goBack}>
         <Text variant="muted" className="text-sm -mt-2 mb-2">
-          {vehicleLabel} — marcá los que te sirven y ajustá fechas en el siguiente paso
+          {vehicleLabel} — solo se muestran avisos que todavía no tenés activos
         </Text>
 
         <ReminderCatalogSelect
@@ -183,14 +169,12 @@ export default function SetupRemindersScreen() {
           onToggle={toggle}
           includeAlignmentWithTires={includeAlignmentWithTires}
           onToggleAlignmentWithTires={() => setIncludeAlignmentWithTires((prev) => !prev)}
+          hiddenTemplateIds={hiddenTemplateIds}
           onAddCustom={openCustomReminder}
         />
 
-        <Button onPress={handleSelectContinue} size="lg">
-          {selected.size > 0 ? 'Revisar fechas' : 'Continuar sin recordatorios'}
-        </Button>
-        <Button variant="ghost" onPress={goHome}>
-          Configurar después
+        <Button onPress={handleSelectContinue} size="lg" disabled={availableCount === 0}>
+          {availableCount > 0 ? 'Revisar fechas' : 'Elegí un recordatorio'}
         </Button>
       </FormScreen>
     );
@@ -199,16 +183,16 @@ export default function SetupRemindersScreen() {
   return (
     <FormScreen title="Revisá y ajustá" onClose={() => setStep('select')}>
       <Text variant="muted" className="text-sm -mt-2 mb-2">
-        Definí el próximo vencimiento de cada aviso para {vehicle.make} {vehicle.model}
+        Definí el próximo vencimiento antes de guardar
       </Text>
 
       <ReminderReviewList drafts={drafts} onChange={setDrafts} errors={errors} />
 
       <Button onPress={handleSave} loading={isLoading} size="lg">
-        Guardar {drafts.length} recordatorio{drafts.length === 1 ? '' : 's'}
+        Agregar {drafts.length} recordatorio{drafts.length === 1 ? '' : 's'}
       </Button>
       <Button variant="ghost" onPress={() => setStep('select')} disabled={isLoading}>
-        Volver a la selección
+        Volver
       </Button>
     </FormScreen>
   );

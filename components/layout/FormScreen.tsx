@@ -12,6 +12,7 @@ interface FormScreenProps {
   onClose?: () => void;
   contentClassName?: string;
   footer?: React.ReactNode;
+  animated?: boolean;
 }
 
 function FormScreen({
@@ -20,12 +21,13 @@ function FormScreen({
   onClose,
   contentClassName,
   footer,
+  animated = true,
 }: FormScreenProps) {
   const handleClose = onClose ?? (() => router.back());
 
   return (
     <View className="flex-1 bg-background">
-      <KeyboardView padded safeArea contentClassName={cn('gap-6', contentClassName)}>
+      <KeyboardView padded safeArea animated={animated} contentClassName={cn('gap-6', contentClassName)}>
         <View className="flex-row items-center justify-between">
           <Text variant="h2">{title}</Text>
           <Pressable

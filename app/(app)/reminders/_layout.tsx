@@ -5,6 +5,8 @@ export default function RemindersLayout() {
   return (
     <Stack screenOptions={{ ...modalScreenOptions, headerShown: false }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="add-catalog" />
+      <Stack.Screen name="custom" />
       <Stack.Screen name="[id]" />
     </Stack>
   );

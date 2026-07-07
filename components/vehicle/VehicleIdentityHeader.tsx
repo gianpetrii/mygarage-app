@@ -34,7 +34,7 @@ function VehicleIdentityHeader({ vehicle: vehicleProp, className }: VehicleIdent
 
   return (
     <View className={cn('gap-2', className)}>
-      <VehicleSummaryCard vehicle={vehicle} showPhoto onPress={goDetail} isActive showChevron />
+      <VehicleSummaryCard vehicle={vehicle} showPhoto onPress={goDetail} showChevron />
 
       {multi ? (
         <Pressable

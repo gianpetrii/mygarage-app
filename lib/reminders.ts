@@ -14,6 +14,16 @@ import {
 import { db } from './firebase';
 import type { ServiceReminder } from '@/types';
 
+function sanitizeFirestoreData<T extends Record<string, unknown>>(data: T): T {
+  return Object.fromEntries(
+    Object.entries(data).filter(([, value]) => {
+      if (value === undefined) return false;
+      if (typeof value === 'number' && !Number.isFinite(value)) return false;
+      return true;
+    }),
+  ) as T;
+}
+
 function fromFirestore(id: string, data: Record<string, unknown>): ServiceReminder {
   return {
     ...(data as Omit<ServiceReminder, 'id' | 'createdAt' | 'updatedAt'>),
@@ -43,7 +53,7 @@ export async function addReminder(
   data: Omit<ServiceReminder, 'id' | 'createdAt' | 'updatedAt'>,
 ): Promise<string> {
   const ref = await addDoc(collection(db, 'reminders'), {
-    ...data,
+    ...sanitizeFirestoreData(data),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -55,7 +65,7 @@ export async function updateReminder(
   updates: Partial<Omit<ServiceReminder, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>,
 ): Promise<void> {
   await updateDoc(doc(db, 'reminders', id), {
-    ...updates,
+    ...sanitizeFirestoreData(updates),
     updatedAt: serverTimestamp(),
   });
 }
@@ -66,13 +76,10 @@ export async function deleteReminder(id: string): Promise<void> {
 
 export async function completeReminder(
   id: string,
-  completedDate: number,
-  completedMileage: number,
+  updates: Partial<Omit<ServiceReminder, 'id' | 'userId' | 'createdAt'>>,
 ): Promise<void> {
   await updateDoc(doc(db, 'reminders', id), {
-    isCompleted: true,
-    lastCompletedDate: completedDate,
-    lastCompletedMileage: completedMileage,
+    ...sanitizeFirestoreData(updates),
     updatedAt: serverTimestamp(),
   });
 }

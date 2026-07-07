@@ -13,17 +13,16 @@ interface AnimatedScreenProps {
 }
 
 function AnimatedScreen({ children, disabled = false }: AnimatedScreenProps) {
-  const opacity = useSharedValue(disabled ? 1 : 0);
-  const translateY = useSharedValue(disabled ? 0 : 14);
+  const opacity = useSharedValue(1);
+  const translateY = useSharedValue(disabled ? 0 : 10);
 
   useFocusEffect(
     React.useCallback(() => {
       if (disabled) return;
-      opacity.value = withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) });
+      opacity.value = 1;
       translateY.value = withTiming(0, { duration: 280, easing: Easing.out(Easing.cubic) });
       return () => {
-        opacity.value = 0;
-        translateY.value = 14;
+        translateY.value = 10;
       };
     }, [disabled, opacity, translateY]),
   );

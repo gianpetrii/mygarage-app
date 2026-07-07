@@ -5,7 +5,7 @@ import {
   Alert,
   Pressable,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import {
   ArrowLeft,
   Edit,
@@ -23,7 +23,6 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { MileageInput } from '@/components/vehicle/MileageInput';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ReminderCard } from '@/components/reminders/ReminderCard';
 import { TimelineItem } from '@/components/timeline/TimelineItem';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
 import { useMaintenanceStore } from '@/store/useMaintenanceStore';
@@ -33,6 +32,7 @@ import { useRemindersStore } from '@/store/useRemindersStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useVehicleManual } from '@/hooks/useVehicleManual';
+import { useActiveVehicle } from '@/hooks/useActiveVehicle';
 import { buildVehicleExportHtml, shareVehicleExport } from '@/lib/exportVehicleHistory';
 import { parseGroupedInteger } from '@/lib/numberFormat';
 import { Separator } from '@/components/ui/separator';
@@ -59,6 +59,15 @@ export default function VehicleDetailScreen() {
 
   const vehicle = vehicles.find((v) => v.id === id);
   const { manualResolved, manualLoading, openManual } = useVehicleManual(vehicle);
+  const { setActiveVehicle } = useActiveVehicle();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (vehicle) {
+        void setActiveVehicle(vehicle);
+      }
+    }, [vehicle, setActiveVehicle]),
+  );
 
   React.useEffect(() => {
     if (!user || !id) return;
@@ -80,10 +89,6 @@ export default function VehicleDetailScreen() {
       </View>
     );
   }
-
-  const activeReminders = reminders.filter(
-    (r) => r.vehicleId === id && !r.isCompleted,
-  );
 
   const handleDelete = () => {
     Alert.alert(
@@ -161,7 +166,7 @@ export default function VehicleDetailScreen() {
           className="h-10 w-10 items-center justify-center rounded-full"
           accessibilityLabel="Volver"
         >
-          <ArrowLeft size={22} color="#18181b" />
+          <ArrowLeft size={22} color={iconColor} />
         </Pressable>
         <Text variant="h3" numberOfLines={1} className="flex-1 text-center">
           {vehicle.make} {vehicle.model}
@@ -218,24 +223,7 @@ export default function VehicleDetailScreen() {
           onOpen={openManual}
         />
 
-        {activeReminders.length > 0 && (
-          <View className="gap-3">
-            <View className="flex-row items-center justify-between">
-              <Text variant="h3">Recordatorios activos</Text>
-              <Pressable onPress={() => router.push('/(app)/reminders')}>
-                <Text className="text-sm font-medium text-primary">Ver todos</Text>
-              </Pressable>
-            </View>
-            {activeReminders.slice(0, 3).map((reminder) => (
-              <ReminderCard
-                key={reminder.id}
-                reminder={reminder}
-                onPress={() => router.push(`/(app)/reminders/${reminder.id}`)}
-                compact
-              />
-            ))}
-          </View>
-        )}
+        <VehicleSpecsPanel vehicle={vehicle} />
 
         <View className="gap-3">
           <View className="flex-row items-center justify-between">
@@ -266,8 +254,6 @@ export default function VehicleDetailScreen() {
             ))
           )}
         </View>
-
-        <VehicleSpecsPanel vehicle={vehicle} />
       </ScrollView>
 
       <Dialog open={kmDialogOpen} onOpenChange={setKmDialogOpen}>

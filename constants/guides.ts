@@ -74,6 +74,8 @@ export const GUIDES: Guide[] = [
   },
 ];
 
+export const FEATURED_GUIDE_IDS = ['cambiar-rueda', 'puente-bateria', 'control-fluidos'] as const;
+
 export function getGuideById(id: string): Guide | undefined {
   return GUIDES.find((g) => g.id === id);
 }
