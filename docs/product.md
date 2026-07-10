@@ -1,4 +1,4 @@
-# CarLogger — Producto
+# MyGarage — Producto
 
 ## Usuario objetivo
 

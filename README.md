@@ -1,4 +1,4 @@
-# CarLogger App
+# MyGarage App
 
 ## Descripción del proyecto
 

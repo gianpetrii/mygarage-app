@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Image, type ImageStyle, type StyleProp } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
+import { BRAND } from '@/constants/brand';
 import { cn } from '@/lib/utils';
 
 const BRAND_ICON = require('../../assets/brand-icon.png');
@@ -21,7 +22,7 @@ function AppBrandIcon({ size = 40, color, className, style }: AppBrandIconProps)
   return (
     <Image
       source={BRAND_ICON}
-      accessibilityLabel="CarLogger"
+      accessibilityLabel={BRAND.name}
       className={cn(className)}
       style={[{ width: size, height: size, tintColor: tint }, style]}
       resizeMode="contain"

@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import { BRAND } from '@/constants/brand';
 import type { ServiceReminder } from '@/types';
 
 export async function scheduleReminderNotification(reminder: ServiceReminder): Promise<string | null> {
@@ -17,7 +18,7 @@ export async function scheduleReminderNotification(reminder: ServiceReminder): P
 
     const id = await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Recordatorio — CarLogger',
+        title: `Recordatorio — ${BRAND.name}`,
         body: reminder.title,
         data: { reminderId: reminder.id, vehicleId: reminder.vehicleId },
       },

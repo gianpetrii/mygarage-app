@@ -54,14 +54,14 @@ if (!isIosPersonalTeam) {
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'CarLogger',
-  slug: 'carlogger-app',
+  name: 'MyGarage',
+  slug: 'mygarage-app',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
   newArchEnabled: true,
-  scheme: 'carlogger',
+  scheme: 'mygarage',
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
@@ -69,11 +69,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.carlogger.app',
+    bundleIdentifier: 'com.mygarage.app',
     usesAppleSignIn: !isIosPersonalTeam,
   },
   android: {
-    package: 'com.carlogger.app',
+    package: 'com.mygarage.app',
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#09090b',

@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { BRAND } from '@/constants/brand';
 import { buildTimeline } from './timeline';
 import type { Vehicle, MaintenanceRecord, FuelEntry, Expense, ServiceReminder } from '@/types';
 
@@ -51,7 +52,7 @@ export function buildVehicleExportHtml(
   <h1>${vehicle.make} ${vehicle.model} (${vehicle.year})</h1>
   <p class="meta">
     Patente: ${vehicle.licensePlate ?? '—'} · Kilometraje: ${vehicle.mileage.toLocaleString()} km<br/>
-    Generado con CarLogger — ${format(Date.now(), "d 'de' MMMM yyyy", { locale: es })}
+    Generado con ${BRAND.name} — ${format(Date.now(), "d 'de' MMMM yyyy", { locale: es })}
   </p>
   <h2>Historial</h2>
   <table>

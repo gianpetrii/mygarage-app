@@ -1,3 +1,5 @@
+import { BRAND } from '@/constants/brand';
+
 export interface GuideStep {
   title: string;
   body: string;
@@ -69,7 +71,7 @@ export const GUIDES: Guide[] = [
       { title: 'Documentación', body: 'Cédula, seguro, VTV vigente, licencia.' },
       { title: 'Herramientas', body: 'Rueda de auxilio, gato, llave cruz, triángulo, balizas.' },
       { title: 'Emergencia', body: 'Botiquín, linterna, cargador, agua.' },
-      { title: 'App', body: 'Registrá cargas y services en CarLogger para no perder comprobantes.' },
+      { title: 'App', body: `Registrá cargas y services en ${BRAND.name} para no perder comprobantes.` },
     ],
   },
 ];

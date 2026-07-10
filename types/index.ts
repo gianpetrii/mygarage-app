@@ -68,7 +68,7 @@ export interface PushNotificationToken {
   platform: 'ios' | 'android';
 }
 
-// ─── CarLogger Domain ─────────────────────────────────────────────────────────
+// ─── MyGarage Domain ──────────────────────────────────────────────────────────
 
 export type FuelType = 'gasoline' | 'diesel' | 'electric' | 'hybrid';
 export type Transmission = 'manual' | 'automatic' | 'cvt';
