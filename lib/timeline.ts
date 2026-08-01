@@ -1,11 +1,5 @@
-import { MAINTENANCE_TYPE_LABELS, EXPENSE_CATEGORY_LABELS } from '@/constants/domain';
-import type {
-  MaintenanceRecord,
-  FuelEntry,
-  Expense,
-  TimelineEntry,
-  TimelineEntryType,
-} from '@/types';
+import { MAINTENANCE_TYPE_LABELS } from '@/constants/domain';
+import type { MaintenanceRecord, TimelineEntry, TimelineEntryType } from '@/types';
 
 export function maintenanceToTimeline(record: MaintenanceRecord): TimelineEntry {
   return {
@@ -20,43 +14,8 @@ export function maintenanceToTimeline(record: MaintenanceRecord): TimelineEntry 
   };
 }
 
-export function fuelToTimeline(entry: FuelEntry): TimelineEntry {
-  return {
-    id: entry.id,
-    type: 'fuel',
-    vehicleId: entry.vehicleId,
-    date: entry.date,
-    title: entry.gasStation ? `Carga — ${entry.gasStation}` : 'Carga de combustible',
-    amount: entry.totalCost,
-    mileage: entry.mileage,
-    source: entry,
-  };
-}
-
-export function expenseToTimeline(expense: Expense): TimelineEntry {
-  return {
-    id: expense.id,
-    type: 'expense',
-    vehicleId: expense.vehicleId,
-    date: expense.date,
-    title: expense.title || EXPENSE_CATEGORY_LABELS[expense.category],
-    amount: expense.amount,
-    mileage: expense.mileage,
-    source: expense,
-  };
-}
-
-export function buildTimeline(
-  maintenance: MaintenanceRecord[],
-  fuel: FuelEntry[],
-  expenses: Expense[],
-): TimelineEntry[] {
-  const entries: TimelineEntry[] = [
-    ...maintenance.map(maintenanceToTimeline),
-    ...fuel.map(fuelToTimeline),
-    ...expenses.map(expenseToTimeline),
-  ];
-  return entries.sort((a, b) => b.date - a.date);
+export function buildTimeline(maintenance: MaintenanceRecord[]): TimelineEntry[] {
+  return maintenance.map(maintenanceToTimeline).sort((a, b) => b.date - a.date);
 }
 
 export function filterTimeline(
@@ -95,9 +54,5 @@ export function getTimelineSubtitle(entry: TimelineEntry): string {
     const record = entry.source as MaintenanceRecord;
     return MAINTENANCE_TYPE_LABELS[record.type] ?? 'Mantenimiento';
   }
-  if (entry.type === 'expense') {
-    const exp = entry.source as Expense;
-    return EXPENSE_CATEGORY_LABELS[exp.category];
-  }
-  return 'Nafta';
+  return 'Registro';
 }

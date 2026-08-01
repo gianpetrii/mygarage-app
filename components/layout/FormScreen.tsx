@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { View, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { X } from 'lucide-react-native';
+import { ArrowLeft, X } from 'lucide-react-native';
 import { KeyboardView } from '@/components/layout/KeyboardView';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ interface FormScreenProps {
   title: string;
   children: React.ReactNode;
   onClose?: () => void;
+  onBack?: () => void;
   contentClassName?: string;
   footer?: React.ReactNode;
   animated?: boolean;
@@ -19,6 +20,7 @@ function FormScreen({
   title,
   children,
   onClose,
+  onBack,
   contentClassName,
   footer,
   animated = true,
@@ -28,8 +30,22 @@ function FormScreen({
   return (
     <View className="flex-1 bg-background">
       <KeyboardView padded safeArea animated={animated} contentClassName={cn('gap-6', contentClassName)}>
-        <View className="flex-row items-center justify-between">
-          <Text variant="h2">{title}</Text>
+        <View className="flex-row items-center justify-between gap-2">
+          {onBack ? (
+            <Pressable
+              onPress={onBack}
+              className="h-10 w-10 items-center justify-center rounded-full bg-muted"
+              accessibilityRole="button"
+              accessibilityLabel="Volver"
+            >
+              <ArrowLeft size={18} color="#71717a" />
+            </Pressable>
+          ) : (
+            <View className="h-10 w-10" />
+          )}
+          <Text variant="h2" className="flex-1 text-center" numberOfLines={1}>
+            {title}
+          </Text>
           <Pressable
             onPress={handleClose}
             className="h-10 w-10 items-center justify-center rounded-full bg-muted"

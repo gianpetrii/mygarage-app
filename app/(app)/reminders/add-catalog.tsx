@@ -19,7 +19,6 @@ import {
   type ReminderTemplateId,
 } from '@/lib/reminderUtils';
 import { buildSelectedTemplateIds, validateDrafts } from '@/lib/reminderFlow';
-import { scheduleReminderNotification } from '@/lib/reminderScheduling';
 import { auth } from '@/lib/firebase';
 type Step = 'select' | 'review';
 
@@ -114,7 +113,6 @@ export default function AddRemindersCatalogScreen() {
         vehicle.id,
         userId,
         addReminder,
-        scheduleReminderNotification,
       );
 
       if (count === 0) {

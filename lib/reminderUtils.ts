@@ -3,6 +3,20 @@ import type { ReminderPriority, ReminderType, ServiceReminder } from '@/types';
 
 export type ReminderListStatus = 'active' | 'inactive' | 'completed';
 
+/** Recordatorios del vehículo activo; sin auto activo no muestra nada (evita huérfanos). */
+export function filterRemindersForActiveVehicle(
+  reminders: ServiceReminder[],
+  vehicles: { id: string }[],
+  activeVehicleId: string | null | undefined,
+): ServiceReminder[] {
+  if (!activeVehicleId || vehicles.length === 0) return [];
+
+  const knownIds = new Set(vehicles.map((v) => v.id));
+  return reminders.filter(
+    (r) => r.vehicleId === activeVehicleId && knownIds.has(r.vehicleId),
+  );
+}
+
 export function getReminderListStatus(reminder: ServiceReminder): ReminderListStatus {
   if (reminder.isCompleted) return 'completed';
   if (!reminder.isActive) return 'inactive';
@@ -317,7 +331,6 @@ export async function createRemindersFromDrafts(
   addReminder: (
     data: Omit<ServiceReminder, 'id' | 'createdAt' | 'updatedAt'>,
   ) => Promise<string>,
-  scheduleNotification: (reminder: ServiceReminder) => Promise<string | null>,
 ): Promise<{ count: number; failed: ReminderTemplateId[] }> {
   let count = 0;
   const failed: ReminderTemplateId[] = [];
@@ -330,21 +343,8 @@ export async function createRemindersFromDrafts(
     }
 
     try {
-      const id = await addReminder(data);
+      await addReminder(data);
       count += 1;
-
-      if (data.targetDate) {
-        try {
-          await scheduleNotification({
-            ...data,
-            id,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          });
-        } catch {
-          // El recordatorio queda guardado aunque falle la notificación local.
-        }
-      }
     } catch {
       failed.push(draft.templateId);
     }
@@ -362,13 +362,11 @@ export async function createRemindersFromTemplates(
   addReminder: (
     data: Omit<ServiceReminder, 'id' | 'createdAt' | 'updatedAt'>,
   ) => Promise<string>,
-  scheduleNotification: (reminder: ServiceReminder) => Promise<string | null>,
 ): Promise<{ count: number; failed: ReminderTemplateId[] }> {
   return createRemindersFromDrafts(
     buildDefaultDrafts(templateIds, vehicleMileage),
     vehicleId,
     userId,
     addReminder,
-    scheduleNotification,
   );
 }

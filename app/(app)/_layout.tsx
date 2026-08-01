@@ -78,7 +78,6 @@ export default function AppLayout() {
         {/* Stacks ocultos del tab bar */}
         <Tabs.Screen name="history" options={{ href: null }} />
         <Tabs.Screen name="maintenance" options={{ href: null }} />
-        <Tabs.Screen name="fuel" options={{ href: null }} />
         <Tabs.Screen name="add" options={{ href: null }} />
         <Tabs.Screen name="guides" options={{ href: null }} />
         <Tabs.Screen name="onboarding" options={{ href: null }} />

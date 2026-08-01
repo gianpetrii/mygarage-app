@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useMaintenanceStore } from '@/store/useMaintenanceStore';
-import { useExpensesStore } from '@/store/useExpensesStore';
 import { buildTimeline, filterTimeline } from '@/lib/timeline';
 import type { TimelineEntry, TimelineEntryType } from '@/types';
 
@@ -12,10 +11,9 @@ interface UseTimelineOptions {
 
 export function useTimeline(options?: UseTimelineOptions) {
   const { records } = useMaintenanceStore();
-  const { expenses } = useExpensesStore();
 
   const timeline = React.useMemo(() => {
-    const all = buildTimeline(records, [], expenses);
+    const all = buildTimeline(records);
     const filtered = filterTimeline(all, {
       vehicleId: options?.vehicleId,
       type: options?.type,
@@ -24,7 +22,7 @@ export function useTimeline(options?: UseTimelineOptions) {
       return filtered.slice(0, options.limit);
     }
     return filtered;
-  }, [records, expenses, options?.vehicleId, options?.type, options?.limit]);
+  }, [records, options?.vehicleId, options?.type, options?.limit]);
 
   return { timeline, total: timeline.length } satisfies { timeline: TimelineEntry[]; total: number };
 }

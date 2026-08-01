@@ -13,7 +13,6 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useRemindersStore } from '@/store/useRemindersStore';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
 import { REMINDER_PRIORITY_LABELS } from '@/constants/domain';
-import { scheduleReminderNotification } from '@/lib/reminderScheduling';
 import { useToast } from '@/components/ui/toast';
 import type { ReminderPriority, ReminderType } from '@/types';
 
@@ -80,7 +79,7 @@ function CustomReminderForm({ vehicleId: vehicleIdProp, onClose, returnTo }: Cus
     if (!validate() || !user) return;
     setIsLoading(true);
     try {
-      const id = await addReminder({
+      await addReminder({
         vehicleId,
         userId: user.id,
         title: title.trim(),
@@ -92,23 +91,6 @@ function CustomReminderForm({ vehicleId: vehicleIdProp, onClose, returnTo }: Cus
         isCompleted: false,
         isActive: true,
       });
-
-      if (type !== 'mileage') {
-        await scheduleReminderNotification({
-          id,
-          vehicleId,
-          userId: user.id,
-          title: title.trim(),
-          description: description.trim(),
-          type,
-          targetDate: targetDate.getTime(),
-          priority,
-          isCompleted: false,
-          isActive: true,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-      }
 
       toast({
         message: 'Recordatorio guardado',

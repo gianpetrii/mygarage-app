@@ -17,7 +17,9 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Colors } from '@/constants/colors';
-import { cancelAllReminderNotifications } from '@/lib/reminderScheduling';
+import { cancelAllReminderNotifications, syncAllReminderNotifications } from '@/lib/reminderScheduling';
+import { areReminderNotificationsEnabled } from '@/lib/notificationPreferences';
+import { useRemindersStore } from '@/store/useRemindersStore';
 import { cn } from '@/lib/utils';
 import type { ColorScheme } from '@/types';
 
@@ -71,6 +73,11 @@ export default function ProfileScreen() {
     try {
       if (!enabled) {
         await cancelAllReminderNotifications();
+      } else {
+        await syncAllReminderNotifications(
+          useRemindersStore.getState().reminders,
+          areReminderNotificationsEnabled({ ...notifications, reminders: true }),
+        );
       }
       await updatePreferences({
         notifications: { ...notifications, reminders: enabled },

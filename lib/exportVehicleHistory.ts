@@ -7,10 +7,30 @@ import { FUEL_TYPE_LABELS, TRANSMISSION_LABELS } from '@/constants/domain';
 import { formatCurrency } from './currency';
 import { DEFAULT_CURRENCY } from '@/constants/currency';
 import { getTimelineSubtitle, maintenanceToTimeline } from './timeline';
-import type { Vehicle, MaintenanceRecord, ServiceReminder } from '@/types';
+import { buildTechnicalSpecsHtml } from './exportVehicleSpecsHtml';
+import type { Vehicle, MaintenanceRecord } from '@/types';
+
+export interface VehicleExportSections {
+  vehicleData: boolean;
+  activityHistory: boolean;
+  vehiclePhotos: boolean;
+  receiptPhotos: boolean;
+  technicalSpecs: boolean;
+  manual: boolean;
+}
+
+export const DEFAULT_VEHICLE_EXPORT_SECTIONS: VehicleExportSections = {
+  vehicleData: true,
+  activityHistory: true,
+  vehiclePhotos: true,
+  receiptPhotos: true,
+  technicalSpecs: true,
+  manual: true,
+};
 
 export interface VehicleExportOptions {
   manualUrl?: string;
+  sections?: VehicleExportSections;
 }
 
 function escapeHtml(value: string): string {
@@ -21,24 +41,77 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function formatReminderSchedule(reminder: ServiceReminder): string {
-  const parts: string[] = [];
-  if (reminder.targetDate) {
-    parts.push(`Vence ${format(reminder.targetDate, 'dd/MM/yyyy')}`);
-  }
-  if (reminder.targetMileage != null) {
-    parts.push(`Obj. ${reminder.targetMileage.toLocaleString()} km`);
-  }
-  return parts.join(' · ') || '—';
+function escapeAttr(value: string): string {
+  return escapeHtml(value).replace(/'/g, '&#39;');
+}
+
+export function buildVehicleExportTitle(vehicle: Vehicle): string {
+  const base = `${vehicle.make} ${vehicle.model}`.trim();
+  const plate = vehicle.licensePlate?.trim();
+  return plate ? `${base} · ${plate.toUpperCase()}` : base;
+}
+
+function buildActivityDetailLines(record: MaintenanceRecord, entryTitle: string): string {
+  const subtitle = getTimelineSubtitle({
+    id: record.id,
+    type: 'maintenance',
+    vehicleId: record.vehicleId,
+    date: record.date,
+    title: entryTitle,
+    amount: record.cost,
+    mileage: record.mileage,
+    source: record,
+  });
+
+  const lines = [
+    subtitle.trim().toLowerCase() !== entryTitle.trim().toLowerCase() ? subtitle : null,
+    record.serviceProvider ? `Taller: ${record.serviceProvider}` : null,
+    record.description?.trim() ? record.description.trim() : null,
+    record.notes?.trim() ? record.notes.trim() : null,
+  ].filter(Boolean);
+
+  return lines.join(' · ');
+}
+
+function buildPhotoGridHtml(photos: string[], alt: string): string {
+  if (photos.length === 0) return '';
+
+  return `<div class="photo-grid">
+    ${photos
+      .map(
+        (uri, index) =>
+          `<img src="${escapeAttr(uri)}" alt="${escapeAttr(`${alt} ${index + 1}`)}" />`,
+      )
+      .join('')}
+  </div>`;
+}
+
+function buildReceiptPhotosHtml(maintenance: MaintenanceRecord[]): string {
+  const withPhotos = maintenance
+    .filter((r) => r.photos.length > 0)
+    .sort((a, b) => b.date - a.date);
+
+  if (withPhotos.length === 0) return '';
+
+  return withPhotos
+    .map((record) => {
+      const caption = `${format(record.date, 'dd/MM/yyyy')} — ${record.title}`;
+      return `<div class="receipt-block">
+        <p class="receipt-caption"><strong>${escapeHtml(caption)}</strong></p>
+        ${buildPhotoGridHtml(record.photos, record.title)}
+      </div>`;
+    })
+    .join('');
 }
 
 export function buildVehicleExportHtml(
   vehicle: Vehicle,
   maintenance: MaintenanceRecord[],
-  reminders: ServiceReminder[],
   options?: VehicleExportOptions,
 ): string {
+  const sections = { ...DEFAULT_VEHICLE_EXPORT_SECTIONS, ...options?.sections };
   const currency = DEFAULT_CURRENCY;
+  const title = buildVehicleExportTitle(vehicle);
   const vehicleMaintenance = maintenance
     .filter((m) => m.vehicleId === vehicle.id)
     .sort((a, b) => b.date - a.date);
@@ -48,13 +121,7 @@ export function buildVehicleExportHtml(
   const historyRows = timeline
     .map((entry) => {
       const record = entry.source as MaintenanceRecord;
-      const details = [
-        getTimelineSubtitle(entry),
-        record.serviceProvider ? `Taller: ${record.serviceProvider}` : null,
-        record.notes ? `Notas: ${record.notes}` : null,
-      ]
-        .filter(Boolean)
-        .join(' · ');
+      const details = buildActivityDetailLines(record, entry.title);
 
       return `
       <tr>
@@ -69,23 +136,29 @@ export function buildVehicleExportHtml(
     })
     .join('');
 
-  const vehicleReminders = reminders.filter((r) => r.vehicleId === vehicle.id);
-  const activeReminders = vehicleReminders.filter((r) => r.isActive && !r.isCompleted);
-  const activeReminderRows = activeReminders
-    .map(
-      (r) => `
-      <tr>
-        <td>${escapeHtml(r.title)}</td>
-        <td>${escapeHtml(formatReminderSchedule(r))}</td>
-      </tr>`,
-    )
-    .join('');
-
   const manualUrl = options?.manualUrl ?? vehicle.manualUrl;
-  const manualSection = manualUrl
-    ? `<h2>Manual del vehículo</h2>
+  const manualSection =
+    sections.manual && manualUrl
+      ? `<h2>Manual del vehículo</h2>
        <p><a href="${escapeHtml(manualUrl)}">${escapeHtml(manualUrl)}</a></p>`
-    : '';
+      : '';
+
+  const vehiclePhotosSection =
+    sections.vehiclePhotos && (vehicle.photos?.length ?? 0) > 0
+      ? `<h2>Fotos del vehículo</h2>
+         ${buildPhotoGridHtml(vehicle.photos ?? [], `${vehicle.make} ${vehicle.model}`)}`
+      : '';
+
+  const receiptPhotosHtml = buildReceiptPhotosHtml(vehicleMaintenance);
+  const receiptPhotosSection =
+    sections.receiptPhotos && receiptPhotosHtml
+      ? `<h2>Comprobantes</h2>
+         <p class="sub">Fotos de services y arreglos registrados en el historial.</p>
+         ${receiptPhotosHtml}`
+      : '';
+
+  const technicalSpecsSection =
+    sections.technicalSpecs ? buildTechnicalSpecsHtml(vehicle) ?? '' : '';
 
   const specs = [
     ['Marca / modelo', `${vehicle.make} ${vehicle.model}`],
@@ -93,7 +166,7 @@ export function buildVehicleExportHtml(
     ['Versión', vehicle.trim],
     ['Patente', vehicle.licensePlate],
     ['Kilometraje', `${vehicle.mileage.toLocaleString()} km`],
-    ['Combustible', FUEL_TYPE_LABELS[vehicle.fuelType]],
+    ['Tipo de motor', FUEL_TYPE_LABELS[vehicle.fuelType]],
     ['Transmisión', vehicle.transmission ? TRANSMISSION_LABELS[vehicle.transmission] : undefined],
     ['Motor', vehicle.engine],
     ['Color', vehicle.color],
@@ -107,49 +180,62 @@ export function buildVehicleExportHtml(
     )
     .join('');
 
+  const activitySection = sections.activityHistory
+    ? `<h2>Historial de actividades</h2>
+  <table>
+    <thead><tr><th>Fecha</th><th>Detalle</th><th>Monto</th><th>Km</th></tr></thead>
+    <tbody>${historyRows || '<tr><td colspan="4">Sin registros</td></tr>'}</tbody>
+  </table>`
+    : '';
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>Historial — ${escapeHtml(vehicle.make)} ${escapeHtml(vehicle.model)}</title>
+  <title>Historial — ${escapeHtml(title)}</title>
   <style>
     body { font-family: system-ui, sans-serif; padding: 24px; color: #111; line-height: 1.45; }
     h1 { font-size: 22px; margin-bottom: 4px; }
     h2 { font-size: 16px; margin-top: 28px; margin-bottom: 8px; }
+    h3.spec-section { font-size: 14px; margin-top: 18px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
     table { width: 100%; border-collapse: collapse; margin-top: 8px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; vertical-align: top; }
     th { background: #f4f4f5; width: 32%; }
+    table.spec-table th { width: 38%; }
+    table.spec-table.compare th { width: auto; font-size: 12px; }
+    table.spec-table.compare td { font-size: 12px; }
     .meta { color: #666; font-size: 13px; }
     .sub { color: #666; font-size: 12px; }
+    .spec-title { font-size: 15px; font-weight: 600; margin: 4px 0 0; }
     a { color: #111; word-break: break-all; }
+    .photo-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+    .photo-grid img { width: 46%; max-width: 300px; height: auto; border-radius: 8px; border: 1px solid #ddd; object-fit: cover; }
+    .receipt-block { margin-top: 16px; page-break-inside: avoid; }
+    .receipt-caption { margin: 0 0 8px; font-size: 13px; }
   </style>
 </head>
 <body>
-  <h1>${escapeHtml(vehicle.make)} ${escapeHtml(vehicle.model)}</h1>
+  <h1>${escapeHtml(title)}</h1>
   <p class="meta">
     Generado con ${BRAND.name} — ${format(Date.now(), "d 'de' MMMM yyyy", { locale: es })}
   </p>
 
-  <h2>Datos del vehículo</h2>
+  ${
+    sections.vehicleData
+      ? `<h2>Datos del vehículo</h2>
   <table>
     <tbody>${specs}</tbody>
-  </table>
-
-  ${
-    activeReminderRows
-      ? `<h2>Recordatorios activos</h2>
-  <table>
-    <thead><tr><th>Aviso</th><th>Próximo vencimiento</th></tr></thead>
-    <tbody>${activeReminderRows}</tbody>
   </table>`
       : ''
   }
 
-  <h2>Historial de movimientos</h2>
-  <table>
-    <thead><tr><th>Fecha</th><th>Detalle</th><th>Monto</th><th>Km</th></tr></thead>
-    <tbody>${historyRows || '<tr><td colspan="4">Sin registros</td></tr>'}</tbody>
-  </table>
+  ${vehiclePhotosSection}
+
+  ${technicalSpecsSection}
+
+  ${activitySection}
+
+  ${receiptPhotosSection}
 
   ${manualSection}
 

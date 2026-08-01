@@ -11,12 +11,16 @@ import { VehicleIdentityHeader } from '@/components/vehicle/VehicleIdentityHeade
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRemindersStore } from '@/store/useRemindersStore';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
-import { partitionRemindersForList, isReminderOverdue } from '@/lib/reminderUtils';
+import {
+  partitionRemindersForList,
+  isReminderOverdue,
+  filterRemindersForActiveVehicle,
+} from '@/lib/reminderUtils';
 
 export default function RemindersListScreen() {
   const { user } = useAuthStore();
   const { reminders, fetchReminders } = useRemindersStore();
-  const { activeVehicle, fetchVehicles } = useActiveVehicle();
+  const { vehicles, activeVehicle, fetchVehicles } = useActiveVehicle();
   const [refreshing, setRefreshing] = React.useState(false);
 
   React.useEffect(() => {
@@ -56,8 +60,10 @@ export default function RemindersListScreen() {
     });
   };
 
-  const vehicleReminders = reminders.filter(
-    (r) => !activeVehicle || r.vehicleId === activeVehicle.id,
+  const vehicleReminders = filterRemindersForActiveVehicle(
+    reminders,
+    vehicles,
+    activeVehicle?.id,
   );
   const { active, inactive, completed } = partitionRemindersForList(vehicleReminders);
   const hasAny = vehicleReminders.length > 0;
@@ -98,7 +104,27 @@ export default function RemindersListScreen() {
         </Text>
       ) : null}
 
-      {!hasAny ? (
+      {vehicles.length === 0 ? (
+        <View className="mt-4">
+          <EmptyState
+            icon={Bell}
+            title="Agregá un vehículo primero"
+            description="Los recordatorios se configuran por auto"
+            actionLabel="Agregar vehículo"
+            onAction={() => router.push('/(app)/vehicles/new')}
+          />
+        </View>
+      ) : !activeVehicle ? (
+        <View className="mt-4">
+          <EmptyState
+            icon={Bell}
+            title="Elegí un vehículo"
+            description="Seleccioná el auto para ver y configurar sus recordatorios"
+            actionLabel="Ver vehículos"
+            onAction={() => router.push('/(app)/vehicles')}
+          />
+        </View>
+      ) : !hasAny ? (
         <View className="mt-4">
           <EmptyState
             icon={Bell}

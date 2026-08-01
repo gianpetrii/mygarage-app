@@ -18,7 +18,6 @@ import { Platform } from 'react-native';
 import { auth, db } from '@/lib/firebase';
 import { useVehiclesStore } from './useVehiclesStore';
 import { useMaintenanceStore } from './useMaintenanceStore';
-import { useFuelStore } from './useFuelStore';
 import { useExpensesStore } from './useExpensesStore';
 import { useRemindersStore } from './useRemindersStore';
 import { updateUserPreferences } from '@/lib/users';
@@ -219,7 +218,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
       // Reset domain stores
       useVehiclesStore.getState().reset();
       useMaintenanceStore.getState().reset();
-      useFuelStore.getState().reset();
       useExpensesStore.getState().reset();
       useRemindersStore.getState().reset();
       set({ user: null, session: null });

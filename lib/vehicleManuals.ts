@@ -1,4 +1,4 @@
-import * as WebBrowser from 'expo-web-browser';
+import { Linking } from 'react-native';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { VEHICLE_MANUALS_CATALOG, type VehicleManualCatalogEntry } from '@/constants/vehicleManuals';
 import { normalizeMake, normalizeModel } from '@/lib/vehicleCatalog';
@@ -73,12 +73,18 @@ export async function openVehicleManual(
   if (resolved.status !== 'available' || !resolved.url) return 'unavailable';
 
   try {
+    const WebBrowser = await import('expo-web-browser');
     await WebBrowser.openBrowserAsync(resolved.url, {
       enableBarCollapsing: true,
       showTitle: true,
     });
     return 'opened';
   } catch {
-    return 'unavailable';
+    try {
+      await Linking.openURL(resolved.url);
+      return 'opened';
+    } catch {
+      return 'unavailable';
+    }
   }
 }

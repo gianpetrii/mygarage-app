@@ -11,22 +11,24 @@ export function useActiveVehicle() {
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
+      if (vehicles.length === 0) {
+        if (!cancelled) {
+          setSelectedVehicle(null);
+          await storage.remove(STORAGE_KEYS.ACTIVE_VEHICLE_ID);
+          setIsReady(true);
+        }
+        return;
+      }
+
       const savedId = await storage.get<string>(STORAGE_KEYS.ACTIVE_VEHICLE_ID);
       if (cancelled) return;
 
-      if (savedId) {
-        const found = vehicles.find((v) => v.id === savedId);
-        if (found) {
-          setSelectedVehicle(found);
-        } else if (vehicles.length === 1) {
-          setSelectedVehicle(vehicles[0]);
-          await storage.set(STORAGE_KEYS.ACTIVE_VEHICLE_ID, vehicles[0].id);
-        } else {
-          setSelectedVehicle(null);
-        }
-      } else if (vehicles.length === 1) {
-        setSelectedVehicle(vehicles[0]);
-        await storage.set(STORAGE_KEYS.ACTIVE_VEHICLE_ID, vehicles[0].id);
+      const found = savedId ? vehicles.find((v) => v.id === savedId) : undefined;
+      const next = found ?? vehicles[0];
+
+      setSelectedVehicle(next);
+      if (next.id !== savedId) {
+        await storage.set(STORAGE_KEYS.ACTIVE_VEHICLE_ID, next.id);
       }
       setIsReady(true);
     })();

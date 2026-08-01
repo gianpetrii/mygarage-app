@@ -1,15 +1,12 @@
 import * as Notifications from 'expo-notifications';
 import { BRAND } from '@/constants/brand';
-import { useAuthStore } from '@/store/useAuthStore';
 import type { ServiceReminder } from '@/types';
 
-export function areReminderNotificationsEnabled(): boolean {
-  const prefs = useAuthStore.getState().user?.preferences?.notifications;
-  return prefs?.reminders !== false;
-}
-
-export async function scheduleReminderNotification(reminder: ServiceReminder): Promise<string | null> {
-  if (!areReminderNotificationsEnabled()) {
+export async function scheduleReminderNotification(
+  reminder: ServiceReminder,
+  remindersEnabled = true,
+): Promise<string | null> {
+  if (!remindersEnabled) {
     return null;
   }
 
@@ -46,6 +43,50 @@ export async function scheduleReminderNotification(reminder: ServiceReminder): P
 
 export async function cancelReminderNotification(notificationId: string): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(notificationId).catch(() => {});
+}
+
+export async function cancelNotificationsForReminder(reminderId: string): Promise<void> {
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    await Promise.all(
+      scheduled
+        .filter((n) => n.content.data?.reminderId === reminderId)
+        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
+    );
+  } catch {
+    // Sin permisos o plataforma sin soporte.
+  }
+}
+
+export async function rescheduleReminderNotification(
+  reminder: ServiceReminder,
+  remindersEnabled = true,
+): Promise<void> {
+  await cancelNotificationsForReminder(reminder.id);
+  await scheduleReminderNotification(reminder, remindersEnabled);
+}
+
+export async function syncAllReminderNotifications(
+  reminders: ServiceReminder[],
+  remindersEnabled = true,
+): Promise<void> {
+  if (!remindersEnabled) return;
+
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') return;
+  } catch {
+    return;
+  }
+
+  await cancelAllReminderNotifications();
+
+  for (const reminder of reminders) {
+    if (!reminder.isActive || reminder.isCompleted || !reminder.targetDate) continue;
+    const triggerDate = new Date(reminder.targetDate);
+    if (triggerDate.getTime() <= Date.now()) continue;
+    await scheduleReminderNotification(reminder, remindersEnabled);
+  }
 }
 
 export async function cancelAllReminderNotifications(): Promise<void> {

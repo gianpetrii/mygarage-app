@@ -2,7 +2,7 @@ import * as React from 'react';
 import { View, Pressable } from 'react-native';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Wrench, Fuel, DollarSign, ChevronRight } from 'lucide-react-native';
+import { Wrench, ChevronRight } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { getTimelineSubtitle } from '@/lib/timeline';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -11,14 +11,10 @@ import { cn } from '@/lib/utils';
 
 const ICONS = {
   maintenance: Wrench,
-  fuel: Fuel,
-  expense: DollarSign,
 } as const;
 
 const ICON_COLORS = {
   maintenance: '#22c55e',
-  fuel: '#3b82f6',
-  expense: '#a855f7',
 } as const;
 
 interface TimelineItemProps {
@@ -28,8 +24,8 @@ interface TimelineItemProps {
 }
 
 function TimelineItem({ entry, onPress, className }: TimelineItemProps) {
-  const Icon = ICONS[entry.type];
-  const color = ICON_COLORS[entry.type];
+  const Icon = ICONS[entry.type as keyof typeof ICONS] ?? Wrench;
+  const color = ICON_COLORS[entry.type as keyof typeof ICON_COLORS] ?? '#22c55e';
   const { formatMoney } = useCurrency();
 
   return (

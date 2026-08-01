@@ -58,7 +58,7 @@ function VehicleDetailsSummary({ vehicle, onEdit }: VehicleDetailsSummaryProps) 
       {vehicle.trim?.trim() ? (
         <DetailRow label="Versión" value={vehicle.trim.trim()} />
       ) : null}
-      <DetailRow label="Combustible" value={FUEL_TYPE_LABELS[vehicle.fuelType]} />
+      <DetailRow label="Tipo de motor" value={FUEL_TYPE_LABELS[vehicle.fuelType]} />
       <DetailRow label="Transmisión" value={TRANSMISSION_LABELS[vehicle.transmission]} />
       {optionalRows.map((row) => (
         <DetailRow key={row.label} label={row.label} value={row.value} />

@@ -1,16 +1,14 @@
 import * as React from 'react';
 import { View, ScrollView, Image, Alert, Pressable } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Trash2, Wrench, DollarSign, Calendar, Fuel } from 'lucide-react-native';
+import { ArrowLeft, Trash2, Wrench, Calendar } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
 import { useMaintenanceStore } from '@/store/useMaintenanceStore';
-import { useFuelStore } from '@/store/useFuelStore';
-import { useExpensesStore } from '@/store/useExpensesStore';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
-import { MAINTENANCE_TYPE_LABELS, EXPENSE_CATEGORY_LABELS } from '@/constants/domain';
+import { MAINTENANCE_TYPE_LABELS } from '@/constants/domain';
 import { useCurrency } from '@/hooks/useCurrency';
 import type { TimelineEntryType } from '@/types';
 
@@ -19,99 +17,40 @@ export default function HistoryDetailScreen() {
   const insets = useSafeAreaInsets();
   const { formatMoney } = useCurrency();
   const { records, deleteRecord } = useMaintenanceStore();
-  const { entries, deleteEntry } = useFuelStore();
-  const { expenses, deleteExpense } = useExpensesStore();
   const { vehicles } = useVehiclesStore();
 
-  if (type === 'maintenance') {
-    const record = records.find((r) => r.id === id);
-    const vehicle = vehicles.find((v) => v.id === record?.vehicleId);
-    if (!record) return <NotFound />;
-    return (
-      <DetailShell
-        title={record.title}
-        insets={insets}
-        onDelete={() =>
-          confirmDelete('registro', () => deleteRecord(id).then(() => router.back()))
-        }
-      >
-        <InfoCard
-          icon={Wrench}
-          subtitle={MAINTENANCE_TYPE_LABELS[record.type]}
-          chips={[
-            format(record.date, "d MMM yyyy", { locale: es }),
-            `${record.mileage.toLocaleString()} km`,
-            formatMoney(record.cost),
-          ]}
-          vehicle={vehicle ? `${vehicle.make} ${vehicle.model}` : undefined}
-        />
-        {record.description ? <Section title="Descripción" body={record.description} /> : null}
-        {record.serviceProvider ? <Section title="Taller" body={record.serviceProvider} /> : null}
-        {record.photos.length > 0 && <PhotoGrid photos={record.photos} />}
-        {record.notes ? <Section title="Notas" body={record.notes} /> : null}
-      </DetailShell>
-    );
+  if (type !== 'maintenance') {
+    return <NotFound />;
   }
 
-  if (type === 'fuel') {
-    const entry = entries.find((e) => e.id === id);
-    const vehicle = vehicles.find((v) => v.id === entry?.vehicleId);
-    if (!entry) return <NotFound />;
-    return (
-      <DetailShell
-        title="Carga de combustible"
-        insets={insets}
-        onDelete={() =>
-          confirmDelete('carga', () => deleteEntry(id).then(() => router.back()))
-        }
-      >
-        <InfoCard
-          icon={Fuel}
-          subtitle={entry.gasStation ?? 'Combustible'}
-          chips={[
-            format(entry.date, "d MMM yyyy", { locale: es }),
-            `${entry.liters} L`,
-            formatMoney(entry.totalCost),
-          ]}
-          vehicle={vehicle ? `${vehicle.make} ${vehicle.model}` : undefined}
-        />
-        <Section
-          title="Detalle"
-          body={`${entry.mileage.toLocaleString()} km · ${formatMoney(entry.pricePerLiter)}/L · ${entry.isFullTank ? 'Tanque lleno' : 'Carga parcial'}`}
-        />
-        {entry.notes ? <Section title="Notas" body={entry.notes} /> : null}
-      </DetailShell>
-    );
-  }
+  const record = records.find((r) => r.id === id);
+  const vehicle = vehicles.find((v) => v.id === record?.vehicleId);
+  if (!record) return <NotFound />;
 
-  if (type === 'expense') {
-    const expense = expenses.find((e) => e.id === id);
-    const vehicle = vehicles.find((v) => v.id === expense?.vehicleId);
-    if (!expense) return <NotFound />;
-    return (
-      <DetailShell
-        title={expense.title}
-        insets={insets}
-        onDelete={() =>
-          confirmDelete('gasto', () => deleteExpense(id).then(() => router.back()))
-        }
-      >
-        <InfoCard
-          icon={DollarSign}
-          subtitle={EXPENSE_CATEGORY_LABELS[expense.category]}
-          chips={[
-            format(expense.date, "d MMM yyyy", { locale: es }),
-            formatMoney(expense.amount),
-          ]}
-          vehicle={vehicle ? `${vehicle.make} ${vehicle.model}` : undefined}
-        />
-        {expense.vendor ? <Section title="Proveedor" body={expense.vendor} /> : null}
-        {expense.description ? <Section title="Descripción" body={expense.description} /> : null}
-      </DetailShell>
-    );
-  }
-
-  return <NotFound />;
+  return (
+    <DetailShell
+      title={record.title}
+      insets={insets}
+      onDelete={() =>
+        confirmDelete('registro', () => deleteRecord(id).then(() => router.back()))
+      }
+    >
+      <InfoCard
+        icon={Wrench}
+        subtitle={MAINTENANCE_TYPE_LABELS[record.type]}
+        chips={[
+          format(record.date, "d MMM yyyy", { locale: es }),
+          `${record.mileage.toLocaleString()} km`,
+          formatMoney(record.cost),
+        ]}
+        vehicle={vehicle ? `${vehicle.make} ${vehicle.model}` : undefined}
+      />
+      {record.description ? <Section title="Descripción" body={record.description} /> : null}
+      {record.serviceProvider ? <Section title="Taller" body={record.serviceProvider} /> : null}
+      {record.photos.length > 0 && <PhotoGrid photos={record.photos} />}
+      {record.notes ? <Section title="Notas" body={record.notes} /> : null}
+    </DetailShell>
+  );
 }
 
 function NotFound() {

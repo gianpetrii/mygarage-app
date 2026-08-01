@@ -117,7 +117,7 @@ export default function EditVehicleScreen() {
           />
         </View>
 
-        <Select label="Combustible" options={FUEL_OPTIONS} value={fuelType} onChange={setFuelType} />
+        <Select label="Tipo de motor" options={FUEL_OPTIONS} value={fuelType} onChange={setFuelType} />
 
         <View className="flex-row gap-3">
           <Input label="Motor" value={engine} onChangeText={setEngine} containerClassName="flex-1" />

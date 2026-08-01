@@ -13,10 +13,22 @@ import {
   CACHE_KEYS,
 } from '@/lib/offlineCache';
 import { recalculateAfterComplete } from '@/lib/reminderUtils';
-import { scheduleReminderNotification } from '@/lib/reminderScheduling';
+import {
+  rescheduleReminderNotification,
+  cancelNotificationsForReminder,
+  syncAllReminderNotifications,
+} from '@/lib/reminderScheduling';
 import { buildMaintenanceFromReminderComplete, type ReminderCompleteExtras } from '@/lib/reminderCompletion';
+import { areReminderNotificationsEnabled } from '@/lib/notificationPreferences';
 import { useMaintenanceStore } from '@/store/useMaintenanceStore';
 import type { ServiceReminder } from '@/types';
+
+function areRemindersEnabledForCurrentUser(): boolean {
+  const { useAuthStore } = require('@/store/useAuthStore') as typeof import('./useAuthStore');
+  return areReminderNotificationsEnabled(
+    useAuthStore.getState().user?.preferences?.notifications,
+  );
+}
 
 interface RemindersStore {
   reminders: ServiceReminder[];
@@ -58,6 +70,7 @@ export const useRemindersStore = create<RemindersStore>((set, get) => ({
       const reminders = await getReminders(userId);
       set({ reminders });
       await syncRemindersCache(reminders);
+      void syncAllReminderNotifications(reminders, areRemindersEnabledForCurrentUser());
     } catch {
       // Firestore es la fuente de verdad: no rehidratar caché local (evita fantasmas).
     } finally {
@@ -72,6 +85,7 @@ export const useRemindersStore = create<RemindersStore>((set, get) => ({
     const reminders = [newReminder, ...get().reminders];
     set({ reminders });
     await syncRemindersCache(reminders);
+    void rescheduleReminderNotification(newReminder, areRemindersEnabledForCurrentUser());
     return id;
   },
 
@@ -91,10 +105,13 @@ export const useRemindersStore = create<RemindersStore>((set, get) => ({
     );
     set({ reminders });
     await syncRemindersCache(reminders);
+    const updated = reminders.find((r) => r.id === id);
+    if (updated) void rescheduleReminderNotification(updated, areRemindersEnabledForCurrentUser());
   },
 
   deleteReminder: async (id) => {
     const trimmedId = id.trim();
+    await cancelNotificationsForReminder(trimmedId);
     await deleteFromDb(trimmedId);
     removeReminderFromState(set, get, trimmedId);
   },
@@ -116,13 +133,7 @@ export const useRemindersStore = create<RemindersStore>((set, get) => ({
     const now = Date.now();
     const updatedReminder: ServiceReminder = { ...reminder, ...updates, updatedAt: now };
 
-    if (updatedReminder.targetDate && updatedReminder.isActive && !updatedReminder.isCompleted) {
-      try {
-        await scheduleReminderNotification(updatedReminder);
-      } catch {
-        // El recordatorio queda guardado aunque falle la notificación local.
-      }
-    }
+    void rescheduleReminderNotification(updatedReminder, areRemindersEnabledForCurrentUser());
 
     const reminders = get().reminders.map((r) => (r.id === id ? updatedReminder : r));
     set({ reminders });

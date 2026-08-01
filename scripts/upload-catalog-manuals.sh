@@ -3,14 +3,16 @@
 # Requiere: gcloud CLI autenticado con acceso al proyecto.
 #
 #   gcloud auth login
-#   gcloud config set project carlogger-app
+#   gcloud config set project <tu-proyecto-firebase>   # ej. desde EXPO_PUBLIC_FIREBASE_PROJECT_ID
 #   pnpm run upload:manuals
 #
 # Alternativa: Firebase Console → Storage → Subir a catalog/manuals/...
+# El ID del proyecto en Firebase/GCP puede diferir del nombre de la app (MyGarage).
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Usá FIREBASE_STORAGE_BUCKET si el bucket no coincide con el default de tu .env.local
 BUCKET="${FIREBASE_STORAGE_BUCKET:-carlogger-app.firebasestorage.app}"
 
 if ! command -v gcloud >/dev/null 2>&1; then

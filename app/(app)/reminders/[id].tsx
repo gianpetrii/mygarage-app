@@ -16,7 +16,6 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
 import { isReminderOverdue } from '@/lib/reminderUtils';
 import { REMINDER_PRIORITY_LABELS } from '@/constants/domain';
-import { scheduleReminderNotification } from '@/lib/reminderScheduling';
 import type { ReminderPriority } from '@/types';
 
 const PRIORITY_OPTIONS = Object.entries(REMINDER_PRIORITY_LABELS).map(([value, label]) => ({
@@ -82,14 +81,6 @@ export default function ReminderDetailScreen() {
       };
       await updateReminder(id, updates);
 
-      if (updates.targetDate) {
-        await scheduleReminderNotification({
-          ...reminder,
-          ...updates,
-          targetDate: updates.targetDate,
-        });
-      }
-
       Alert.alert('Guardado', 'Los cambios se guardaron correctamente.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -104,13 +95,6 @@ export default function ReminderDetailScreen() {
     setLoading(true);
     try {
       await updateReminder(id, { isActive: true, isCompleted: false });
-      if (reminder.targetDate) {
-        await scheduleReminderNotification({
-          ...reminder,
-          isActive: true,
-          isCompleted: false,
-        });
-      }
       Alert.alert('Listo', 'El recordatorio volvió a estar activo.');
     } catch {
       Alert.alert('Error', 'No se pudo reactivar el recordatorio.');

@@ -33,7 +33,15 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useVehicleManual } from '@/hooks/useVehicleManual';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
-import { buildVehicleExportHtml, shareVehicleExport, VehicleExportError } from '@/lib/exportVehicleHistory';
+import { VehicleExportSheet } from '@/components/vehicle/VehicleExportSheet';
+import {
+  buildVehicleExportHtml,
+  buildVehicleExportTitle,
+  shareVehicleExport,
+  VehicleExportError,
+  type VehicleExportSections,
+} from '@/lib/exportVehicleHistory';
+import { hasTechnicalSpecsForVehicle } from '@/lib/exportVehicleSpecsHtml';
 import { parseGroupedInteger } from '@/lib/numberFormat';
 import { Separator } from '@/components/ui/separator';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -47,6 +55,7 @@ export default function VehicleDetailScreen() {
   const { reminders, fetchReminders } = useRemindersStore();
 
   const [actionsOpen, setActionsOpen] = React.useState(false);
+  const [exportSheetOpen, setExportSheetOpen] = React.useState(false);
   const [kmDialogOpen, setKmDialogOpen] = React.useState(false);
   const [kmValue, setKmValue] = React.useState('');
   const [isSavingKm, setIsSavingKm] = React.useState(false);
@@ -77,6 +86,18 @@ export default function VehicleDetailScreen() {
     vehicleId: id,
     limit: 5,
   });
+
+  const exportAvailability = React.useMemo(
+    () => ({
+      hasManual: Boolean(vehicle?.manualUrl ?? manualResolved?.url),
+      hasVehiclePhotos: (vehicle?.photos?.length ?? 0) > 0,
+      hasReceiptPhotos: vehicle
+        ? records.some((r) => r.vehicleId === vehicle.id && r.photos.length > 0)
+        : false,
+      hasTechnicalSpecs: vehicle ? hasTechnicalSpecsForVehicle(vehicle) : false,
+    }),
+    [vehicle, manualResolved?.url, records],
+  );
 
   if (!vehicle) {
     return (
@@ -126,13 +147,18 @@ export default function VehicleDetailScreen() {
     }
   };
 
-  const handleExport = async () => {
+  const openExportSheet = () => {
     setActionsOpen(false);
+    setExportSheetOpen(true);
+  };
+
+  const handleExport = async (sections: VehicleExportSections) => {
     setIsExporting(true);
     try {
       const manualUrl = vehicle.manualUrl ?? manualResolved?.url;
-      const html = buildVehicleExportHtml(vehicle, records, reminders, { manualUrl });
-      await shareVehicleExport(html, `${vehicle.make} ${vehicle.model}`);
+      const html = buildVehicleExportHtml(vehicle, records, { manualUrl, sections });
+      await shareVehicleExport(html, buildVehicleExportTitle(vehicle));
+      setExportSheetOpen(false);
     } catch (error) {
       const message =
         error instanceof VehicleExportError
@@ -292,8 +318,8 @@ export default function VehicleDetailScreen() {
           />
           <ActionSheetRow
             icon={Share2}
-            label={isExporting ? 'Exportando...' : 'Exportar historial'}
-            onPress={handleExport}
+            label="Exportar historial"
+            onPress={openExportSheet}
             disabled={isExporting}
           />
           <Separator className="my-2" />
@@ -308,6 +334,14 @@ export default function VehicleDetailScreen() {
           />
         </View>
       </KeyboardSheet>
+
+      <VehicleExportSheet
+        visible={exportSheetOpen}
+        onClose={() => !isExporting && setExportSheetOpen(false)}
+        onExport={handleExport}
+        isExporting={isExporting}
+        availability={exportAvailability}
+      />
     </View>
   );
 }

@@ -20,7 +20,11 @@ import { useTimeline } from '@/hooks/useTimeline';
 import { useRemindersStore } from '@/store/useRemindersStore';
 import { useMaintenanceStore } from '@/store/useMaintenanceStore';
 import { useExpensesStore } from '@/store/useExpensesStore';
-import { sortRemindersByUrgency, isReminderOverdue } from '@/lib/reminderUtils';
+import {
+  sortRemindersByUrgency,
+  isReminderOverdue,
+  filterRemindersForActiveVehicle,
+} from '@/lib/reminderUtils';
 import { storage, STORAGE_KEYS } from '@/lib/storage';
 
 export default function DashboardScreen() {
@@ -65,7 +69,7 @@ export default function DashboardScreen() {
   const now = Date.now();
 
   const vehicleReminders = sortRemindersByUrgency(
-    reminders.filter((r) => !activeVehicle || r.vehicleId === activeVehicle.id),
+    filterRemindersForActiveVehicle(reminders, vehicles, activeVehicle?.id),
   );
   const heroReminder = vehicleReminders[0];
   const nextReminders = vehicleReminders.slice(1, 3);
@@ -198,7 +202,7 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          {timeline.length > 0 && (
+          {activeVehicle && timeline.length > 0 && (
             <View className="gap-3">
               <View className="flex-row items-center justify-between">
                 <Text variant="h3">Última actividad</Text>

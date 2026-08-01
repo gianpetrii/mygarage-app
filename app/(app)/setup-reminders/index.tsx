@@ -18,7 +18,7 @@ import {
   type ReminderTemplateId,
 } from '@/lib/reminderUtils';
 import { buildSelectedTemplateIds, validateDrafts } from '@/lib/reminderFlow';
-import { requestNotificationPermissions, scheduleReminderNotification } from '@/lib/reminderScheduling';
+import { requestNotificationPermissions } from '@/lib/reminderScheduling';
 import { auth } from '@/lib/firebase';
 
 type Step = 'permissions' | 'select' | 'review';
@@ -107,7 +107,6 @@ export default function SetupRemindersScreen() {
         vehicle.id,
         userId,
         addReminder,
-        scheduleReminderNotification,
       );
 
       if (count === 0 && drafts.length > 0) {

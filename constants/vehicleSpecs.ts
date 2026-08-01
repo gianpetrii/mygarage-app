@@ -45,7 +45,7 @@ export const VEHICLE_SPECS_CATALOG: VehicleModelSpecs[] = [
       {
         title: 'Motor',
         rows: [
-          row('Combustible', 'Nafta'),
+          row('Motor', 'Nafta'),
           byVer('Potencia máxima', { Trend: '101 CV', Comfortline: '101 CV', Highline: '101 CV' }),
           byVer('Torque máximo', { Trend: '155 Nm', Comfortline: '155 Nm', Highline: '155 Nm' }),
           row('Revoluciones potencia máx.', '5.750 rpm'),
@@ -135,7 +135,7 @@ export const VEHICLE_SPECS_CATALOG: VehicleModelSpecs[] = [
       {
         title: 'Motor',
         rows: [
-          row('Combustible', 'Nafta'),
+          row('Motor', 'Nafta'),
           byVer('Potencia máxima', { XEI: '140 CV', SEG: '168 CV', 'SE-G': '168 CV' }),
           byVer('Torque máximo', { XEI: '173 Nm', SEG: '200 Nm', 'SE-G': '200 Nm' }),
           byVer('Revoluciones potencia máx.', { XEI: '6.400 rpm', SEG: '6.600 rpm', 'SE-G': '6.600 rpm' }),
@@ -204,7 +204,7 @@ export const VEHICLE_SPECS_CATALOG: VehicleModelSpecs[] = [
       {
         title: 'Motor',
         rows: [
-          row('Combustible', 'Nafta'),
+          row('Motor', 'Nafta'),
           byVer('Potencia máxima', { LT: '116 CV', LTZ: '153 CV', Premier: '153 CV' }),
           byVer('Torque máximo', { LT: '160 Nm', LTZ: '235 Nm', Premier: '235 Nm' }),
           byVer('Revoluciones potencia máx.', { LT: '6.000 rpm', LTZ: '5.500 rpm', Premier: '5.500 rpm' }),

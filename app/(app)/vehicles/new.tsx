@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ImagePickerField } from '@/components/ui/image-picker';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/toast';
 import { VehicleMakeModelFields } from '@/components/vehicle/VehicleMakeModelFields';
 import { VehicleYearSelect } from '@/components/vehicle/VehicleYearSelect';
 import { MileageInput } from '@/components/vehicle/MileageInput';
@@ -21,8 +22,10 @@ export default function NewVehicleScreen() {
   const { user } = useAuthStore();
   const { addVehicle, updateVehicle } = useVehiclesStore();
   const { setActiveVehicle } = useActiveVehicle();
+  const { toast } = useToast();
   const [step, setStep] = React.useState<1 | 2>(1);
   const [isLoading, setIsLoading] = React.useState(false);
+  const isSavingRef = React.useRef(false);
 
   const [make, setMake] = React.useState('');
   const [model, setModel] = React.useState('');
@@ -53,8 +56,10 @@ export default function NewVehicleScreen() {
     if (validateStep1()) setStep(2);
   };
 
-  const handleSubmit = async (skipOptional = false) => {
-    if (!validateStep1() || !user) return;
+  const handleSubmit = async () => {
+    if (!validateStep1() || !user || isLoading || isSavingRef.current) return;
+
+    isSavingRef.current = true;
     setIsLoading(true);
     try {
       const normalizedMake = normalizeMake(make);
@@ -69,30 +74,40 @@ export default function NewVehicleScreen() {
         mileage: parseGroupedInteger(mileage),
         fuelType: 'gasoline',
         transmission: 'manual',
-        licensePlate: skipOptional ? undefined : licensePlate.trim().toUpperCase() || undefined,
+        licensePlate: licensePlate.trim().toUpperCase() || undefined,
         photos: [],
       });
-      if (!skipOptional && photos.length > 0) {
+
+      if (photos.length > 0) {
         const remotePhotos = await Promise.all(
           photos.map((uri) => uploadVehiclePhoto(user.id, vehicleId, uri)),
         );
         await updateVehicle(vehicleId, { photos: remotePhotos });
       }
+
       const newVehicle = useVehiclesStore.getState().vehicles.find((v) => v.id === vehicleId);
       if (newVehicle) await setActiveVehicle(newVehicle);
-      router.replace({
-        pathname: '/(app)/setup-reminders',
-        params: { vehicleId },
+
+      toast({
+        message: 'Vehículo guardado',
+        description: `${normalizedMake} ${normalizedModel} ya está en tu garaje`,
+        variant: 'success',
       });
+
+      router.replace('/(app)/vehicles');
     } catch {
       Alert.alert('Error', 'No se pudo guardar el vehículo. Intentá de nuevo.');
     } finally {
       setIsLoading(false);
+      isSavingRef.current = false;
     }
   };
 
   return (
-    <FormScreen title={step === 1 ? 'Nuevo vehículo' : 'Datos opcionales'}>
+    <FormScreen
+      title={step === 1 ? 'Nuevo vehículo' : 'Datos opcionales'}
+      onBack={step === 2 ? () => setStep(1) : undefined}
+    >
       {step === 1 ? (
         <>
           <Text variant="muted" className="text-sm -mt-2 mb-2">
@@ -130,7 +145,7 @@ export default function NewVehicleScreen() {
       ) : (
         <>
           <Text variant="muted" className="text-sm -mt-2 mb-2">
-            Paso 2 de 2 — podés completarlo después desde el detalle
+            Paso 2 de 2 — patente y foto (opcional)
           </Text>
           <Input
             label="Patente"
@@ -145,16 +160,8 @@ export default function NewVehicleScreen() {
             onChange={setPhotos}
             maxImages={1}
           />
-          <Button onPress={() => handleSubmit(false)} loading={isLoading} size="lg" className="mt-2">
+          <Button onPress={handleSubmit} loading={isLoading} size="lg" className="mt-2">
             Guardar vehículo
-          </Button>
-          <Button
-            variant="ghost"
-            onPress={() => handleSubmit(true)}
-            loading={isLoading}
-            className="mt-1"
-          >
-            Omitir y guardar
           </Button>
         </>
       )}
