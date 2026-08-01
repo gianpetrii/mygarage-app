@@ -28,13 +28,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { TimelineItem } from '@/components/timeline/TimelineItem';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
 import { useMaintenanceStore } from '@/store/useMaintenanceStore';
-import { useExpensesStore } from '@/store/useExpensesStore';
 import { useRemindersStore } from '@/store/useRemindersStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useVehicleManual } from '@/hooks/useVehicleManual';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
-import { buildVehicleExportHtml, shareVehicleExport } from '@/lib/exportVehicleHistory';
+import { buildVehicleExportHtml, shareVehicleExport, VehicleExportError } from '@/lib/exportVehicleHistory';
 import { parseGroupedInteger } from '@/lib/numberFormat';
 import { Separator } from '@/components/ui/separator';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -45,7 +44,6 @@ export default function VehicleDetailScreen() {
   const { user } = useAuthStore();
   const { vehicles, deleteVehicle, updateVehicle } = useVehiclesStore();
   const { records, fetchRecords } = useMaintenanceStore();
-  const { expenses, fetchExpenses } = useExpensesStore();
   const { reminders, fetchReminders } = useRemindersStore();
 
   const [actionsOpen, setActionsOpen] = React.useState(false);
@@ -72,7 +70,6 @@ export default function VehicleDetailScreen() {
   React.useEffect(() => {
     if (!user || !id) return;
     fetchRecords(user.id, id);
-    fetchExpenses(user.id, id);
     fetchReminders(user.id, id);
   }, [user, id]);
 
@@ -133,16 +130,15 @@ export default function VehicleDetailScreen() {
     setActionsOpen(false);
     setIsExporting(true);
     try {
-      const html = buildVehicleExportHtml(
-        vehicle,
-        records,
-        [],
-        expenses,
-        reminders,
-      );
+      const manualUrl = vehicle.manualUrl ?? manualResolved?.url;
+      const html = buildVehicleExportHtml(vehicle, records, reminders, { manualUrl });
       await shareVehicleExport(html, `${vehicle.make} ${vehicle.model}`);
-    } catch {
-      Alert.alert('Error', 'No se pudo generar el export');
+    } catch (error) {
+      const message =
+        error instanceof VehicleExportError
+          ? error.message
+          : 'No se pudo generar el PDF. Recompilá la app nativa (expo run:ios) si acabás de actualizar dependencias.';
+      Alert.alert('Exportar historial', message);
     } finally {
       setIsExporting(false);
     }
