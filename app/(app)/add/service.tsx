@@ -1,7 +1,6 @@
 import * as React from 'react';
-import { View, Alert } from 'react-native';
+import { View, Alert, Pressable } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { addMonths } from 'date-fns';
 import { FormScreen } from '@/components/layout/FormScreen';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,25 +9,22 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { ImagePickerField } from '@/components/ui/image-picker';
 import { CollapsibleSection } from '@/components/ui/collapsible-section';
 import { Text } from '@/components/ui/text';
+import { MileageInput } from '@/components/vehicle/MileageInput';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useMaintenanceStore } from '@/store/useMaintenanceStore';
-import { useRemindersStore } from '@/store/useRemindersStore';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
-import { MAINTENANCE_TYPE_LABELS } from '@/constants/domain';
-import { REMINDER_TEMPLATES } from '@/lib/reminderUtils';
-import { scheduleReminderNotification } from '@/lib/reminderScheduling';
-import type { MaintenanceType } from '@/types';
+import {
+  getMovementKindOption,
+  MOVEMENT_KIND_OPTIONS,
+  type MovementKind,
+} from '@/lib/maintenanceForm';
+import { parseGroupedInteger } from '@/lib/numberFormat';
+import { cn } from '@/lib/utils';
 
-const TYPE_OPTIONS = Object.entries(MAINTENANCE_TYPE_LABELS).map(([value, label]) => ({
-  label,
-  value: value as MaintenanceType,
-}));
-
-export default function AddServiceScreen() {
+export default function AddMovementScreen() {
   const { vehicleId: vehicleIdParam } = useLocalSearchParams<{ vehicleId?: string }>();
   const { user } = useAuthStore();
   const { addRecord } = useMaintenanceStore();
-  const { addReminder } = useRemindersStore();
   const { vehicles, activeVehicle } = useActiveVehicle();
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -40,44 +36,36 @@ export default function AddServiceScreen() {
   const [vehicleId, setVehicleId] = React.useState(
     vehicleIdParam ?? activeVehicle?.id ?? vehicles[0]?.id ?? '',
   );
-  const [type, setType] = React.useState<MaintenanceType>('oil_change');
-  const [title, setTitle] = React.useState(MAINTENANCE_TYPE_LABELS.oil_change);
+  const [kind, setKind] = React.useState<MovementKind>('repair');
+  const [customTitle, setCustomTitle] = React.useState('');
   const [date, setDate] = React.useState(new Date());
   const [mileage, setMileage] = React.useState(
     String(activeVehicle?.mileage ?? vehicles.find((v) => v.id === vehicleId)?.mileage ?? ''),
   );
   const [cost, setCost] = React.useState('');
-  const [nextServiceMileage, setNextServiceMileage] = React.useState('');
-  const [nextServiceDate, setNextServiceDate] = React.useState<Date | null>(null);
-  const [description, setDescription] = React.useState('');
   const [serviceProvider, setServiceProvider] = React.useState('');
-  const [parts, setParts] = React.useState('');
   const [photos, setPhotos] = React.useState<string[]>([]);
   const [notes, setNotes] = React.useState('');
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
-  React.useEffect(() => {
-    setTitle(MAINTENANCE_TYPE_LABELS[type]);
-  }, [type]);
-
-  const applyTemplate = (templateId: string) => {
-    const t = REMINDER_TEMPLATES.find((x) => x.id === templateId);
-    if (!t) return;
-    setTitle(t.title);
-    if (t.intervalMonths) {
-      setNextServiceDate(addMonths(new Date(), t.intervalMonths));
-    }
-    if ('intervalMileage' in t && t.intervalMileage && mileage) {
-      setNextServiceMileage(String(parseFloat(mileage) + t.intervalMileage));
-    }
-  };
+  const kindOption = getMovementKindOption(kind);
+  const resolvedTitle =
+    kind === 'service'
+      ? kindOption.defaultTitle
+      : kind === 'other'
+        ? customTitle.trim()
+        : customTitle.trim() || kindOption.defaultTitle;
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!vehicleId) newErrors.vehicleId = 'Seleccioná un vehículo';
-    if (!title.trim()) newErrors.title = 'El título es requerido';
-    if (!mileage || isNaN(parseFloat(mileage))) newErrors.mileage = 'Kilometraje inválido';
-    if (!cost || isNaN(parseFloat(cost))) newErrors.cost = 'Costo inválido';
+    if (kind === 'other' && !resolvedTitle) newErrors.title = 'El título es requerido';
+    if (!mileage || !Number.isFinite(parseGroupedInteger(mileage))) {
+      newErrors.mileage = 'Kilometraje inválido';
+    }
+    if (cost.trim() && Number.isNaN(parseFloat(cost))) {
+      newErrors.cost = 'Monto inválido';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -86,53 +74,23 @@ export default function AddServiceScreen() {
     if (!validate() || !user) return;
     setIsLoading(true);
     try {
+      const parsedMileage = parseGroupedInteger(mileage);
+      const parsedCost = cost.trim() ? parseFloat(cost) : undefined;
+
       await addRecord({
         vehicleId,
         userId: user.id,
-        type,
-        title: title.trim(),
-        description: description.trim(),
+        type: kindOption.type,
+        title: resolvedTitle,
+        description: '',
         date: date.getTime(),
-        mileage: parseFloat(mileage),
-        cost: parseFloat(cost),
+        mileage: parsedMileage,
+        cost: parsedCost != null && Number.isFinite(parsedCost) ? parsedCost : 0,
         serviceProvider: serviceProvider.trim() || undefined,
-        nextServiceMileage: nextServiceMileage ? parseFloat(nextServiceMileage) : undefined,
-        nextServiceDate: nextServiceDate?.getTime(),
-        parts: parts.trim() ? parts.split(',').map((p) => p.trim()).filter(Boolean) : [],
+        parts: [],
         photos,
         notes: notes.trim() || undefined,
       });
-
-      if (nextServiceMileage || nextServiceDate) {
-        const reminderId = await addReminder({
-          vehicleId,
-          userId: user.id,
-          title: `Próximo: ${title.trim()}`,
-          description: `Recordatorio generado desde service del ${date.toLocaleDateString('es-AR')}`,
-          type: nextServiceMileage && nextServiceDate ? 'both' : nextServiceMileage ? 'mileage' : 'time',
-          targetMileage: nextServiceMileage ? parseFloat(nextServiceMileage) : undefined,
-          targetDate: nextServiceDate?.getTime(),
-          priority: 'medium',
-          isCompleted: false,
-          isActive: true,
-        });
-        if (nextServiceDate) {
-          await scheduleReminderNotification({
-            id: reminderId,
-            vehicleId,
-            userId: user.id,
-            title: `Próximo: ${title.trim()}`,
-            description: '',
-            type: 'time',
-            targetDate: nextServiceDate.getTime(),
-            priority: 'medium',
-            isCompleted: false,
-            isActive: true,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          });
-        }
-      }
 
       router.back();
     } catch {
@@ -143,19 +101,46 @@ export default function AddServiceScreen() {
   };
 
   return (
-    <FormScreen title="Nuevo service">
-      <View className="flex-row flex-wrap gap-2">
-        {REMINDER_TEMPLATES.map((t) => (
-          <Button key={t.id} variant="outline" size="sm" onPress={() => applyTemplate(t.id)}>
-            {t.title}
-          </Button>
-        ))}
+    <FormScreen title="Registrar movimiento">
+      <Text variant="muted" className="text-sm -mt-2">
+        Arreglos, services u otros trabajos que no vienen de un recordatorio
+      </Text>
+
+      <View className="gap-2">
+        <Text className="text-sm font-medium text-foreground">¿Qué fue?</Text>
+        <View className="flex-row flex-wrap gap-2">
+          {MOVEMENT_KIND_OPTIONS.map((option) => {
+            const selected = kind === option.id;
+            return (
+              <Pressable
+                key={option.id}
+                onPress={() => {
+                  setKind(option.id);
+                  if (option.id !== 'other') setCustomTitle('');
+                }}
+                className={cn(
+                  'rounded-full border px-3 py-1.5 active:opacity-80',
+                  selected ? 'border-primary bg-primary/10' : 'border-border bg-card',
+                )}
+              >
+                <Text
+                  className={cn(
+                    'text-sm',
+                    selected ? 'font-semibold text-primary' : 'text-foreground',
+                  )}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       <View className="gap-4">
         {vehicleOptions.length > 0 && (
           <Select
-            label="Vehículo *"
+            label="Vehículo"
             options={vehicleOptions}
             value={vehicleId}
             onChange={setVehicleId}
@@ -163,76 +148,51 @@ export default function AddServiceScreen() {
           />
         )}
 
-        <Select label="Tipo" options={TYPE_OPTIONS} value={type} onChange={setType} />
+        {kind === 'other' && (
+          <Input
+            label="Título"
+            value={customTitle}
+            onChangeText={setCustomTitle}
+            placeholder="Ej: Cambio de correa"
+            error={errors.title}
+          />
+        )}
 
-        <Input
-          label="Título *"
-          value={title}
-          onChangeText={setTitle}
-          error={errors.title}
-        />
+        {kind === 'repair' && (
+          <Input
+            label="¿Qué arreglaste?"
+            value={customTitle}
+            onChangeText={setCustomTitle}
+            placeholder="Ej: Pastillas de freno"
+            error={errors.title}
+          />
+        )}
 
         <DatePicker label="Fecha" value={date} onChange={setDate} maximumDate={new Date()} />
 
         <View className="flex-row gap-3">
-          <Input
-            label="Kilometraje *"
+          <MileageInput
+            label="Kilometraje"
             value={mileage}
-            onChangeText={setMileage}
-            keyboardType="numeric"
+            onChangeValue={setMileage}
             error={errors.mileage}
             containerClassName="flex-1"
           />
           <Input
-            label="Costo *"
+            label="Monto (opcional)"
             value={cost}
             onChangeText={setCost}
             keyboardType="decimal-pad"
             error={errors.cost}
             containerClassName="flex-1"
+            placeholder="ARS"
           />
         </View>
-
-        <Input
-          label="Próximo service (km)"
-          value={nextServiceMileage}
-          onChangeText={setNextServiceMileage}
-          keyboardType="numeric"
-          placeholder="60000"
-        />
-
-        <DatePicker
-          label="Próximo service (fecha)"
-          value={nextServiceDate ?? new Date()}
-          onChange={(d) => setNextServiceDate(d)}
-        />
-        <Text variant="muted" className="text-xs -mt-2">
-          Si completás km o fecha, se crea un recordatorio automático.
-        </Text>
       </View>
 
-      <CollapsibleSection title="Más detalles">
-        <Input
-          label="Descripción"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          numberOfLines={2}
-        />
-        <Input
-          label="Taller"
-          value={serviceProvider}
-          onChangeText={setServiceProvider}
-        />
-        <Input
-          label="Repuestos"
-          value={parts}
-          onChangeText={setParts}
-          placeholder="Separados por coma"
-          multiline
-        />
+      <CollapsibleSection title="Información adicional (opcional)">
         <ImagePickerField
-          label="Comprobantes"
+          label="Foto del comprobante"
           images={photos}
           onChange={setPhotos}
           maxImages={4}
@@ -242,11 +202,24 @@ export default function AddServiceScreen() {
               : undefined
           }
         />
-        <Input label="Notas" value={notes} onChangeText={setNotes} multiline numberOfLines={2} />
+        <Input
+          label="Taller o proveedor"
+          value={serviceProvider}
+          onChangeText={setServiceProvider}
+          placeholder="Opcional"
+        />
+        <Input
+          label="Notas"
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+          numberOfLines={3}
+          placeholder="Detalles, repuestos, etc."
+        />
       </CollapsibleSection>
 
       <Button onPress={handleSubmit} loading={isLoading} size="lg">
-        Guardar service
+        Guardar
       </Button>
     </FormScreen>
   );

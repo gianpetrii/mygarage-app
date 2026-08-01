@@ -11,6 +11,10 @@ export async function getCachedCollection<T>(key: string): Promise<T[] | null> {
   return cached?.data ?? null;
 }
 
+export async function clearCachedCollection(key: string): Promise<void> {
+  await storage.remove(`${CACHE_PREFIX}${key}`);
+}
+
 export const CACHE_KEYS = {
   vehicles: 'vehicles',
   maintenance: 'maintenance',

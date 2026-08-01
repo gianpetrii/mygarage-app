@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { View, Pressable } from 'react-native';
-import { Wrench, ChevronRight, DollarSign } from 'lucide-react-native';
+import { Wrench, ChevronRight } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Text } from './text';
 import { MAINTENANCE_TYPE_LABELS } from '@/constants/domain';
+import { useCurrency } from '@/hooks/useCurrency';
 import type { MaintenanceRecord } from '@/types';
 
 interface MaintenanceCardProps {
@@ -15,6 +16,8 @@ interface MaintenanceCardProps {
 }
 
 function MaintenanceCard({ record, onPress, className }: MaintenanceCardProps) {
+  const { formatMoney } = useCurrency();
+
   return (
     <Pressable
       onPress={onPress}
@@ -40,9 +43,8 @@ function MaintenanceCard({ record, onPress, className }: MaintenanceCardProps) {
           {format(record.date, "d MMM yyyy", { locale: es })} • {record.mileage.toLocaleString()} km
         </Text>
         <View className="flex-row items-center gap-0.5">
-          <DollarSign size={12} color="#71717a" />
           <Text variant="muted" className="text-xs font-medium">
-            {record.cost.toLocaleString('es-AR', { minimumFractionDigits: 0 })}
+            {formatMoney(record.cost)}
           </Text>
         </View>
       </View>

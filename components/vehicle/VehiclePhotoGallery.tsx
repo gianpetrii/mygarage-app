@@ -9,7 +9,7 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { Plus, X, Trash2, ChevronLeft, ChevronRight, Camera, ImagePlus } from 'lucide-react-native';
+import { Plus, X, Trash2, ChevronLeft, ChevronRight, Camera, ImagePlus, Car } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardSheet } from '@/components/layout/KeyboardSheet';
 import { Text } from '@/components/ui/text';
@@ -202,7 +202,7 @@ function VehiclePhotoGallery({
           ) : (
             <View className="items-center gap-2 px-6">
               <View className="h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/40 bg-background">
-                <Plus size={32} color="#71717a" />
+                <Car size={36} color="#71717a" />
               </View>
               <Text variant="muted" className="text-sm text-center">
                 Agregar foto

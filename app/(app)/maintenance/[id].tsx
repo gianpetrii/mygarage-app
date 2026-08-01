@@ -9,10 +9,12 @@ import { Text } from '@/components/ui/text';
 import { useMaintenanceStore } from '@/store/useMaintenanceStore';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
 import { MAINTENANCE_TYPE_LABELS } from '@/constants/domain';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function MaintenanceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const { formatMoney } = useCurrency();
   const { records, deleteRecord } = useMaintenanceStore();
   const { vehicles } = useVehiclesStore();
 
@@ -73,7 +75,7 @@ export default function MaintenanceDetailScreen() {
           <View className="flex-row flex-wrap gap-3">
             <InfoChip icon={Calendar} text={format(record.date, "d 'de' MMMM yyyy", { locale: es })} />
             <InfoChip icon={Wrench} text={`${record.mileage.toLocaleString()} km`} />
-            <InfoChip icon={DollarSign} text={`$${record.cost.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`} />
+            <InfoChip icon={DollarSign} text={formatMoney(record.cost)} />
           </View>
 
           {vehicle && (

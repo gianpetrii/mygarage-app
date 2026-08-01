@@ -44,7 +44,7 @@ function KeyboardView({
   const contentContainerStyle: StyleProp<ViewStyle> = [
     safeArea && {
       paddingTop: insets.top + 12,
-      paddingBottom: Math.max(insets.bottom, 16) + 24,
+      paddingBottom: Math.max(insets.bottom, 16) + 48,
     },
     scrollContentStyle,
   ];

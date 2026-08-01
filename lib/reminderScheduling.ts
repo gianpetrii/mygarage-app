@@ -1,8 +1,18 @@
 import * as Notifications from 'expo-notifications';
 import { BRAND } from '@/constants/brand';
+import { useAuthStore } from '@/store/useAuthStore';
 import type { ServiceReminder } from '@/types';
 
+export function areReminderNotificationsEnabled(): boolean {
+  const prefs = useAuthStore.getState().user?.preferences?.notifications;
+  return prefs?.reminders !== false;
+}
+
 export async function scheduleReminderNotification(reminder: ServiceReminder): Promise<string | null> {
+  if (!areReminderNotificationsEnabled()) {
+    return null;
+  }
+
   if (!reminder.targetDate || reminder.isCompleted || !reminder.isActive) {
     return null;
   }
@@ -36,6 +46,10 @@ export async function scheduleReminderNotification(reminder: ServiceReminder): P
 
 export async function cancelReminderNotification(notificationId: string): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(notificationId).catch(() => {});
+}
+
+export async function cancelAllReminderNotifications(): Promise<void> {
+  await Notifications.cancelAllScheduledNotificationsAsync().catch(() => {});
 }
 
 export async function requestNotificationPermissions(): Promise<boolean> {

@@ -11,11 +11,13 @@ import { useFuelStore } from '@/store/useFuelStore';
 import { useExpensesStore } from '@/store/useExpensesStore';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
 import { MAINTENANCE_TYPE_LABELS, EXPENSE_CATEGORY_LABELS } from '@/constants/domain';
+import { useCurrency } from '@/hooks/useCurrency';
 import type { TimelineEntryType } from '@/types';
 
 export default function HistoryDetailScreen() {
   const { type, id } = useLocalSearchParams<{ type: TimelineEntryType; id: string }>();
   const insets = useSafeAreaInsets();
+  const { formatMoney } = useCurrency();
   const { records, deleteRecord } = useMaintenanceStore();
   const { entries, deleteEntry } = useFuelStore();
   const { expenses, deleteExpense } = useExpensesStore();
@@ -39,7 +41,7 @@ export default function HistoryDetailScreen() {
           chips={[
             format(record.date, "d MMM yyyy", { locale: es }),
             `${record.mileage.toLocaleString()} km`,
-            `$${record.cost.toLocaleString('es-AR')}`,
+            formatMoney(record.cost),
           ]}
           vehicle={vehicle ? `${vehicle.make} ${vehicle.model}` : undefined}
         />
@@ -69,11 +71,14 @@ export default function HistoryDetailScreen() {
           chips={[
             format(entry.date, "d MMM yyyy", { locale: es }),
             `${entry.liters} L`,
-            `$${entry.totalCost.toLocaleString('es-AR')}`,
+            formatMoney(entry.totalCost),
           ]}
           vehicle={vehicle ? `${vehicle.make} ${vehicle.model}` : undefined}
         />
-        <Section title="Detalle" body={`${entry.mileage.toLocaleString()} km · $${entry.pricePerLiter}/L · ${entry.isFullTank ? 'Tanque lleno' : 'Carga parcial'}`} />
+        <Section
+          title="Detalle"
+          body={`${entry.mileage.toLocaleString()} km · ${formatMoney(entry.pricePerLiter)}/L · ${entry.isFullTank ? 'Tanque lleno' : 'Carga parcial'}`}
+        />
         {entry.notes ? <Section title="Notas" body={entry.notes} /> : null}
       </DetailShell>
     );
@@ -96,7 +101,7 @@ export default function HistoryDetailScreen() {
           subtitle={EXPENSE_CATEGORY_LABELS[expense.category]}
           chips={[
             format(expense.date, "d MMM yyyy", { locale: es }),
-            `$${expense.amount.toLocaleString('es-AR')}`,
+            formatMoney(expense.amount),
           ]}
           vehicle={vehicle ? `${vehicle.make} ${vehicle.model}` : undefined}
         />

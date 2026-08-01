@@ -50,10 +50,14 @@ export default function RootLayout() {
   }, [initAuth, initTheme]);
 
   React.useEffect(() => {
-    if (user?.id && !isIosPersonalTeam) {
+    if (
+      user?.id &&
+      !isIosPersonalTeam &&
+      user.preferences?.notifications?.push !== false
+    ) {
       requestPermissions(user.id);
     }
-  }, [user?.id, requestPermissions]);
+  }, [user?.id, user?.preferences?.notifications?.push, requestPermissions]);
 
   return (
     <ShellProviders>

@@ -22,14 +22,20 @@ function VehicleManualCard({
 }: VehicleManualCardProps) {
   const { resolvedScheme } = useColorScheme();
   const colors = Colors[resolvedScheme];
-  const canOpen = Boolean(resolved?.url);
-  const iconColor = canOpen ? colors.foreground : colors.mutedForeground;
+  const isAvailable = resolved?.status === 'available' && Boolean(resolved.url);
+  const iconColor = isAvailable ? colors.foreground : colors.mutedForeground;
+
+  const statusLabel = isLoading
+    ? 'Buscando...'
+    : isAvailable
+      ? null
+      : 'En camino';
 
   const row = (
     <View
       className={cn(
         'flex-row items-center gap-3 rounded-2xl border px-4 py-3',
-        canOpen ? 'border-border bg-card' : 'border-border bg-card',
+        'border-border bg-card',
         className,
       )}
     >
@@ -41,25 +47,28 @@ function VehicleManualCard({
         )}
       </View>
 
-      <Text className="flex-1 font-semibold text-foreground" numberOfLines={1}>
-        Manual del vehículo
-      </Text>
+      <View className="flex-1 min-w-0">
+        <Text className="font-semibold text-foreground" numberOfLines={1}>
+          Manual del vehículo
+        </Text>
+        {!isLoading && !isAvailable && (
+          <Text variant="muted" className="text-xs mt-0.5" numberOfLines={2}>
+            Estamos sumando manuales para más modelos
+          </Text>
+        )}
+      </View>
 
-      {isLoading ? (
-        <Text variant="muted" className="text-sm">
-          ...
+      {statusLabel ? (
+        <Text variant="muted" className="text-sm shrink-0">
+          {statusLabel}
         </Text>
-      ) : canOpen ? (
-        <ChevronRight size={18} color={colors.mutedForeground} />
       ) : (
-        <Text variant="muted" className="text-sm">
-          Próximamente
-        </Text>
+        <ChevronRight size={18} color={colors.mutedForeground} />
       )}
     </View>
   );
 
-  if (canOpen && !isLoading) {
+  if (isAvailable && !isLoading) {
     return (
       <Pressable
         onPress={onOpen}

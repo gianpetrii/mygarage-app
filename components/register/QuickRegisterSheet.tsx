@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { View, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { Wrench, DollarSign, Bell, Plus } from 'lucide-react-native';
+import { Wrench, Bell } from 'lucide-react-native';
 import { KeyboardSheet } from '@/components/layout/KeyboardSheet';
 import { Text } from '@/components/ui/text';
 import { useRegisterSheet } from '@/contexts/RegisterSheetContext';
@@ -10,18 +10,11 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 
 const ACTIONS = [
   {
-    id: 'service',
-    label: 'Service',
-    description: 'Mantenimiento o reparación',
+    id: 'movement',
+    label: 'Movimiento',
+    description: 'Arreglo, service u otro trabajo',
     icon: Wrench,
     route: '/(app)/add/service',
-  },
-  {
-    id: 'expense',
-    label: 'Gasto',
-    description: 'Seguro, patente, peajes...',
-    icon: DollarSign,
-    route: '/(app)/add/expense',
   },
   {
     id: 'reminder',

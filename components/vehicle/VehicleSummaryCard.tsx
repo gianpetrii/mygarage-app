@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { View, Pressable, Image } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
-import { AppEngineIcon } from '@/components/brand/AppEngineIcon';
+import { ChevronRight, Car } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { formatGroupedInteger } from '@/lib/numberFormat';
 import { cn } from '@/lib/utils';
@@ -53,7 +52,7 @@ function VehicleSummaryCard({
           <Image source={{ uri: photo }} className="h-14 w-14 rounded-lg bg-muted" resizeMode="cover" />
         ) : (
           <View className="h-14 w-14 items-center justify-center rounded-lg bg-muted">
-            <AppEngineIcon size={28} />
+            <Car size={28} color="#71717a" />
           </View>
         )
       )}

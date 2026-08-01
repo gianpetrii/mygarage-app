@@ -5,6 +5,7 @@ import { FormScreen } from '@/components/layout/FormScreen';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { ReminderCatalogSelect } from '@/components/reminders/ReminderCatalogSelect';
+import { ReminderCatalogAlreadyActive } from '@/components/reminders/ReminderCatalogAlreadyActive';
 import { ReminderReviewList } from '@/components/reminders/ReminderReviewList';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
@@ -20,7 +21,6 @@ import {
 import { buildSelectedTemplateIds, validateDrafts } from '@/lib/reminderFlow';
 import { scheduleReminderNotification } from '@/lib/reminderScheduling';
 import { auth } from '@/lib/firebase';
-
 type Step = 'select' | 'review';
 
 export default function AddRemindersCatalogScreen() {
@@ -28,7 +28,7 @@ export default function AddRemindersCatalogScreen() {
   const vehicleId = Array.isArray(vehicleIdParam) ? vehicleIdParam[0] : vehicleIdParam;
   const { user } = useAuthStore();
   const { vehicles } = useVehiclesStore();
-  const { reminders, addReminder, fetchReminders } = useRemindersStore();
+  const { reminders, addReminder } = useRemindersStore();
   const [step, setStep] = React.useState<Step>('select');
   const [selected, setSelected] = React.useState<Set<ReminderTemplateId>>(() => new Set());
   const [includeAlignmentWithTires, setIncludeAlignmentWithTires] = React.useState(true);
@@ -37,11 +37,6 @@ export default function AddRemindersCatalogScreen() {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const vehicle = vehicles.find((v) => v.id === vehicleId) ?? vehicles[0];
-
-  React.useEffect(() => {
-    const userId = user?.id ?? auth.currentUser?.uid;
-    if (userId) fetchReminders(userId);
-  }, [user, fetchReminders]);
 
   const goBack = () => {
     router.back();
@@ -161,8 +156,14 @@ export default function AddRemindersCatalogScreen() {
     return (
       <FormScreen title="Agregar recordatorio" onClose={goBack}>
         <Text variant="muted" className="text-sm -mt-2 mb-2">
-          {vehicleLabel} — solo se muestran avisos que todavía no tenés activos
+          {vehicleLabel} — agregá avisos nuevos; los que ya tenés figuran arriba
         </Text>
+
+        <ReminderCatalogAlreadyActive
+          reminders={reminders}
+          vehicleId={vehicle.id}
+          onOpenReminder={(reminderId) => router.push(`/(app)/reminders/${reminderId}`)}
+        />
 
         <ReminderCatalogSelect
           selected={selected}

@@ -14,6 +14,8 @@ import {
   Gauge,
   MoreVertical,
 } from 'lucide-react-native';
+import { VehicleDetailsSummary } from '@/components/vehicle/VehicleDetailsSummary';
+import { VehicleActivityEmpty } from '@/components/vehicle/VehicleActivityEmpty';
 import { VehiclePhotoGallery } from '@/components/vehicle/VehiclePhotoGallery';
 import { VehicleSpecsPanel } from '@/components/vehicle/VehicleSpecsPanel';
 import { VehicleManualCard } from '@/components/vehicle/VehicleManualCard';
@@ -26,7 +28,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { TimelineItem } from '@/components/timeline/TimelineItem';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
 import { useMaintenanceStore } from '@/store/useMaintenanceStore';
-import { useFuelStore } from '@/store/useFuelStore';
 import { useExpensesStore } from '@/store/useExpensesStore';
 import { useRemindersStore } from '@/store/useRemindersStore';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -44,7 +45,6 @@ export default function VehicleDetailScreen() {
   const { user } = useAuthStore();
   const { vehicles, deleteVehicle, updateVehicle } = useVehiclesStore();
   const { records, fetchRecords } = useMaintenanceStore();
-  const { entries, fetchEntries } = useFuelStore();
   const { expenses, fetchExpenses } = useExpensesStore();
   const { reminders, fetchReminders } = useRemindersStore();
 
@@ -72,7 +72,6 @@ export default function VehicleDetailScreen() {
   React.useEffect(() => {
     if (!user || !id) return;
     fetchRecords(user.id, id);
-    fetchEntries(user.id, id);
     fetchExpenses(user.id, id);
     fetchReminders(user.id, id);
   }, [user, id]);
@@ -101,7 +100,7 @@ export default function VehicleDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             await deleteVehicle(id);
-            router.back();
+            router.replace('/(app)/vehicles');
           },
         },
       ],
@@ -137,7 +136,7 @@ export default function VehicleDetailScreen() {
       const html = buildVehicleExportHtml(
         vehicle,
         records,
-        entries,
+        [],
         expenses,
         reminders,
       );
@@ -158,11 +157,23 @@ export default function VehicleDetailScreen() {
     }
   };
 
+  const goToEdit = () => {
+    router.push({ pathname: '/(app)/vehicles/edit', params: { id } });
+  };
+
+  const identitySubtitle = [
+    String(vehicle.year),
+    vehicle.licensePlate,
+    vehicle.trim?.trim(),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center justify-between px-4 py-3">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => router.replace('/(app)/vehicles')}
           className="h-10 w-10 items-center justify-center rounded-full"
           accessibilityLabel="Volver"
         >
@@ -195,11 +206,11 @@ export default function VehicleDetailScreen() {
             <Text variant="h3">
               {vehicle.make} {vehicle.model}
             </Text>
-            {vehicle.licensePlate && (
+            {identitySubtitle ? (
               <Text variant="muted" className="text-sm">
-                {vehicle.licensePlate}
+                {identitySubtitle}
               </Text>
-            )}
+            ) : null}
           </View>
           <Pressable
             onPress={openKmDialog}
@@ -223,6 +234,8 @@ export default function VehicleDetailScreen() {
           onOpen={openManual}
         />
 
+        <VehicleDetailsSummary vehicle={vehicle} onEdit={goToEdit} />
+
         <VehicleSpecsPanel vehicle={vehicle} />
 
         <View className="gap-3">
@@ -237,11 +250,7 @@ export default function VehicleDetailScreen() {
             </Pressable>
           </View>
           {timelineEntries.length === 0 ? (
-            <View className="rounded-xl border border-dashed border-border p-6 items-center">
-              <Text variant="muted" className="text-center text-sm">
-                Sin actividad registrada. Usá el botón + para agregar un service, carga o gasto.
-              </Text>
-            </View>
+            <VehicleActivityEmpty vehicleId={id} />
           ) : (
             timelineEntries.map((entry) => (
               <TimelineItem
@@ -282,7 +291,7 @@ export default function VehicleDetailScreen() {
             label="Editar vehículo"
             onPress={() => {
               setActionsOpen(false);
-              router.push({ pathname: '/(app)/vehicles/edit', params: { id } });
+              goToEdit();
             }}
           />
           <ActionSheetRow

@@ -5,6 +5,7 @@ import { es } from 'date-fns/locale';
 import { Wrench, Fuel, DollarSign, ChevronRight } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { getTimelineSubtitle } from '@/lib/timeline';
+import { useCurrency } from '@/hooks/useCurrency';
 import type { TimelineEntry } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +30,7 @@ interface TimelineItemProps {
 function TimelineItem({ entry, onPress, className }: TimelineItemProps) {
   const Icon = ICONS[entry.type];
   const color = ICON_COLORS[entry.type];
+  const { formatMoney } = useCurrency();
 
   return (
     <Pressable
@@ -57,9 +59,9 @@ function TimelineItem({ entry, onPress, className }: TimelineItemProps) {
           {format(entry.date, "d MMM yyyy", { locale: es })}
         </Text>
       </View>
-      {entry.amount != null && (
+      {entry.amount != null && entry.amount > 0 && (
         <Text className="font-semibold text-foreground text-sm">
-          ${entry.amount.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+          {formatMoney(entry.amount)}
         </Text>
       )}
       {onPress && <ChevronRight size={16} color="#71717a" />}

@@ -10,12 +10,14 @@ import { Text } from '@/components/ui/text';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFuelStore } from '@/store/useFuelStore';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function AddFuelScreen() {
   const { vehicleId: vehicleIdParam } = useLocalSearchParams<{ vehicleId?: string }>();
   const { user } = useAuthStore();
   const { addEntry } = useFuelStore();
   const { vehicles, activeVehicle } = useActiveVehicle();
+  const { formatMoney } = useCurrency();
   const [isLoading, setIsLoading] = React.useState(false);
 
   const vehicleOptions = vehicles.map((v) => ({
@@ -121,7 +123,7 @@ export default function AddFuelScreen() {
           <View className="rounded-xl bg-muted px-4 py-3">
             <Text variant="muted" className="text-xs">Total</Text>
             <Text className="text-lg font-bold">
-              ${totalCost.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+              {formatMoney(totalCost)}
             </Text>
           </View>
         )}

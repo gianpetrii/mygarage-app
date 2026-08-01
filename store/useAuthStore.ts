@@ -21,7 +21,9 @@ import { useMaintenanceStore } from './useMaintenanceStore';
 import { useFuelStore } from './useFuelStore';
 import { useExpensesStore } from './useExpensesStore';
 import { useRemindersStore } from './useRemindersStore';
-import type { AuthState, User, Session } from '@/types';
+import { updateUserPreferences } from '@/lib/users';
+import { DEFAULT_USER_PREFERENCES, mergeUserPreferences } from '@/constants/preferences';
+import type { AuthState, User, Session, UserPreferences } from '@/types';
 
 interface AuthStore extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -33,6 +35,7 @@ interface AuthStore extends AuthState {
   resetPassword: (email: string) => Promise<void>;
   initialize: () => Promise<void>;
   setUser: (user: User | null) => void;
+  updatePreferences: (updates: Partial<UserPreferences>) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -62,7 +65,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
               firebaseUser.photoURL ??
               undefined,
             pushToken: userData?.pushToken,
-            preferences: userData?.preferences,
+            preferences: mergeUserPreferences(userData?.preferences),
           };
 
           const session: Session = {
@@ -104,6 +107,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
           email: firebaseUser.email,
           avatarUrl: firebaseUser.photoURL ?? null,
           pushToken: null,
+          preferences: DEFAULT_USER_PREFERENCES,
           createdAt: serverTimestamp(),
         });
       }
@@ -162,6 +166,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
           email: firebaseUser.email ?? credential.email ?? null,
           avatarUrl: null,
           pushToken: null,
+          preferences: DEFAULT_USER_PREFERENCES,
           createdAt: serverTimestamp(),
         });
       }
@@ -195,6 +200,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         email,
         avatarUrl: null,
         pushToken: null,
+        preferences: DEFAULT_USER_PREFERENCES,
         createdAt: serverTimestamp(),
       });
     } finally {
@@ -250,6 +256,23 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   setUser: (user) => set({ user }),
+
+  updatePreferences: async (updates) => {
+    const { user } = useAuthStore.getState();
+    if (!user) return;
+
+    const preferences = mergeUserPreferences({
+      ...user.preferences,
+      ...updates,
+      notifications: {
+        ...user.preferences?.notifications,
+        ...updates.notifications,
+      },
+    });
+
+    await updateUserPreferences(user.id, preferences);
+    set({ user: { ...user, preferences } });
+  },
 }));
 
 /** Genera un nonce aleatorio para el flujo de Sign in with Apple. */

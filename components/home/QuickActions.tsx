@@ -7,7 +7,7 @@ import { useActiveVehicle } from '@/hooks/useActiveVehicle';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const ACTIONS = [
-  { id: 'service', label: 'Service', icon: Wrench, route: '/(app)/add/service' },
+  { id: 'movement', label: 'Movimiento', icon: Wrench, route: '/(app)/add/service' },
   { id: 'guides', label: 'Guías', icon: BookOpen, route: '/(app)/guides' },
 ] as const;
 

@@ -1,6 +1,36 @@
 import { addMonths } from 'date-fns';
 import type { ReminderPriority, ReminderType, ServiceReminder } from '@/types';
 
+export type ReminderListStatus = 'active' | 'inactive' | 'completed';
+
+export function getReminderListStatus(reminder: ServiceReminder): ReminderListStatus {
+  if (reminder.isCompleted) return 'completed';
+  if (!reminder.isActive) return 'inactive';
+  return 'active';
+}
+
+export function partitionRemindersForList(reminders: ServiceReminder[]) {
+  const active: ServiceReminder[] = [];
+  const inactive: ServiceReminder[] = [];
+  const completed: ServiceReminder[] = [];
+
+  for (const reminder of reminders) {
+    const status = getReminderListStatus(reminder);
+    if (status === 'active') active.push(reminder);
+    else if (status === 'inactive') inactive.push(reminder);
+    else completed.push(reminder);
+  }
+
+  return {
+    active: sortRemindersByUrgency(active),
+    inactive: [...inactive].sort((a, b) => b.updatedAt - a.updatedAt),
+    completed: [...completed].sort(
+      (a, b) =>
+        (b.lastCompletedDate ?? b.updatedAt) - (a.lastCompletedDate ?? a.updatedAt),
+    ),
+  };
+}
+
 export function sortRemindersByUrgency(reminders: ServiceReminder[]): ServiceReminder[] {
   const now = Date.now();
   return [...reminders]
@@ -197,7 +227,7 @@ export function reminderMatchesTemplate(
 ): boolean {
   const template = getTemplateById(templateId);
   if (!template) return false;
-  return reminder.title === template.title && reminder.isActive && !reminder.isCompleted;
+  return reminder.title === template.title && !reminder.isCompleted;
 }
 
 export function getActiveTemplateIdsForVehicle(

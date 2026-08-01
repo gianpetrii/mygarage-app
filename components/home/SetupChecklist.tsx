@@ -24,7 +24,7 @@ const ITEMS = [
     key: 'history' as const,
     icon: Wrench,
     title: 'Registrar primer movimiento',
-    description: 'Service o gasto',
+    description: 'Marcá un recordatorio hecho o registrá un movimiento con +',
   },
   {
     key: 'photo' as const,

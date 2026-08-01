@@ -19,13 +19,21 @@ Guantera de papeles, Excel, notas sueltas.
 - Post-alta: pantalla de setup de recordatorios (VTV, service, seguro).
 - Home con identidad del vehículo, checklist de inicio y acciones rápidas.
 - Registro rápido desde botón central del tab bar.
-- Historial unificado (service + nafta + gastos).
+- Historial unificado (service + nafta).
 - Onboarding corto: vehículo en pocos campos.
 - Guías prácticas accesibles sin saturar el flujo principal.
 
 ## Mercado
 
 Argentina/LATAM primero (patente, español, ARS).
+
+## Validación pendiente (manual)
+
+Pantallas que faltan revisar en dispositivo antes de cerrar el ciclo actual:
+
+- [ ] **Formulario + (Nuevo service)** — chips «¿Qué registraste?», campos adaptativos de próximo vencimiento, guardado y recordatorio automático.
+- [ ] **Recordatorios** — listado, catálogo, personalizado, marcar hecho, notificaciones.
+- [ ] **Inicio** — en general OK; repaso final de hero, vehículo activo, acciones rápidas y manual.
 
 ## Backlog — Catálogo técnico y manuales
 

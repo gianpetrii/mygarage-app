@@ -4,9 +4,11 @@ import { VEHICLE_MANUALS_CATALOG, type VehicleManualCatalogEntry } from '@/const
 import { normalizeMake, normalizeModel } from '@/lib/vehicleCatalog';
 import { firebaseStorage } from '@/lib/firebase';
 
+export type VehicleManualStatus = 'available' | 'coming_soon';
+
 export type ResolvedVehicleManual = {
-  source: 'catalog';
-  entry: VehicleManualCatalogEntry;
+  status: VehicleManualStatus;
+  entry?: VehicleManualCatalogEntry;
   url?: string;
 };
 
@@ -48,15 +50,17 @@ export async function resolveVehicleManual(
   make: string,
   model: string,
   year: number,
-): Promise<ResolvedVehicleManual | null> {
+): Promise<ResolvedVehicleManual> {
   const entry = findCatalogManual(make, model, year);
-  if (!entry) return null;
+  if (!entry) {
+    return { status: 'coming_soon' };
+  }
 
   try {
     const url = await resolveCatalogManualUrl(entry.storagePath);
-    return { source: 'catalog', entry, url };
+    return { status: 'available', entry, url };
   } catch {
-    return { source: 'catalog', entry };
+    return { status: 'coming_soon', entry };
   }
 }
 
@@ -66,7 +70,7 @@ export async function openVehicleManual(
   year: number,
 ): Promise<'opened' | 'unavailable'> {
   const resolved = await resolveVehicleManual(make, model, year);
-  if (!resolved?.url) return 'unavailable';
+  if (resolved.status !== 'available' || !resolved.url) return 'unavailable';
 
   try {
     await WebBrowser.openBrowserAsync(resolved.url, {

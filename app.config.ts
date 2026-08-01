@@ -34,7 +34,7 @@ const plugins: ExpoConfig['plugins'] = [
   [
     'expo-splash-screen',
     {
-      backgroundColor: '#09090b',
+      backgroundColor: '#ffffff',
       image: './assets/splash-icon.png',
       imageWidth: 200,
     },
@@ -65,7 +65,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
-    backgroundColor: '#09090b',
+    backgroundColor: '#ffffff',
   },
   ios: {
     supportsTablet: true,
@@ -76,7 +76,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: 'com.mygarage.app',
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#09090b',
+      backgroundColor: '#ffffff',
     },
     edgeToEdgeEnabled: true,
   },

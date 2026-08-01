@@ -3,14 +3,15 @@ import {
   query,
   where,
   getDocs,
+  getDoc,
   addDoc,
   updateDoc,
   deleteDoc,
   doc,
-  orderBy,
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
+import { FirebaseError } from 'firebase/app';
 import { db } from './firebase';
 import type { ServiceReminder } from '@/types';
 
@@ -37,16 +38,13 @@ export async function getReminders(
   userId: string,
   vehicleId?: string,
 ): Promise<ServiceReminder[]> {
-  const conditions = [where('userId', '==', userId), where('isActive', '==', true)];
-  if (vehicleId) conditions.push(where('vehicleId', '==', vehicleId));
-
-  const q = query(
-    collection(db, 'reminders'),
-    ...conditions,
-    orderBy('createdAt', 'desc'),
-  );
+  const q = query(collection(db, 'reminders'), where('userId', '==', userId));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => fromFirestore(d.id, d.data()));
+  let reminders = snapshot.docs.map((d) => fromFirestore(d.id, d.data()));
+  if (vehicleId) {
+    reminders = reminders.filter((r) => r.vehicleId === vehicleId);
+  }
+  return reminders.sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export async function addReminder(
@@ -70,8 +68,28 @@ export async function updateReminder(
   });
 }
 
-export async function deleteReminder(id: string): Promise<void> {
-  await deleteDoc(doc(db, 'reminders', id));
+export async function deleteReminder(id: string): Promise<'deleted' | 'absent'> {
+  const trimmedId = id.trim();
+  if (!trimmedId) {
+    throw new Error('ID de recordatorio inválido');
+  }
+
+  const ref = doc(db, 'reminders', trimmedId);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    return 'absent';
+  }
+
+  try {
+    await deleteDoc(ref);
+    return 'deleted';
+  } catch (error) {
+    if (error instanceof FirebaseError && error.code === 'not-found') {
+      return 'absent';
+    }
+    throw error;
+  }
 }
 
 export async function completeReminder(

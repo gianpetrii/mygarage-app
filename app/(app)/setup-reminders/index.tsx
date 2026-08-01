@@ -175,7 +175,7 @@ export default function SetupRemindersScreen() {
     return (
       <FormScreen title="Elegí tus avisos" onClose={goHome}>
         <Text variant="muted" className="text-sm -mt-2 mb-2">
-          {vehicleLabel} — marcá los que te sirven y ajustá fechas en el siguiente paso
+          {vehicleLabel} — te sugerimos VTV, service y seguro; desmarcá lo que no uses
         </Text>
 
         <ReminderCatalogSelect

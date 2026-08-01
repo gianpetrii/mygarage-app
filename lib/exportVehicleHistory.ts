@@ -1,6 +1,8 @@
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BRAND } from '@/constants/brand';
+import { formatCurrency } from './currency';
+import { DEFAULT_CURRENCY } from '@/constants/currency';
 import { buildTimeline } from './timeline';
 import type { Vehicle, MaintenanceRecord, FuelEntry, Expense, ServiceReminder } from '@/types';
 
@@ -11,6 +13,8 @@ export function buildVehicleExportHtml(
   expenses: Expense[],
   reminders: ServiceReminder[],
 ): string {
+  const currency = DEFAULT_CURRENCY;
+
   const timeline = buildTimeline(
     maintenance.filter((m) => m.vehicleId === vehicle.id),
     fuel.filter((f) => f.vehicleId === vehicle.id),
@@ -23,7 +27,7 @@ export function buildVehicleExportHtml(
       <tr>
         <td>${format(e.date, 'dd/MM/yyyy')}</td>
         <td>${e.title}</td>
-        <td>${e.amount != null ? `$${e.amount.toLocaleString('es-AR')}` : '—'}</td>
+        <td>${e.amount != null ? formatCurrency(e.amount, currency) : '—'}</td>
         <td>${e.mileage != null ? `${e.mileage.toLocaleString()} km` : '—'}</td>
       </tr>`,
     )

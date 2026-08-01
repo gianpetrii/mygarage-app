@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { View, RefreshControl } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Bell } from 'lucide-react-native';
 import { Screen } from '@/components/layout/Screen';
 import { Text } from '@/components/ui/text';
@@ -11,7 +11,7 @@ import { VehicleIdentityHeader } from '@/components/vehicle/VehicleIdentityHeade
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRemindersStore } from '@/store/useRemindersStore';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
-import { sortRemindersByUrgency, isReminderOverdue } from '@/lib/reminderUtils';
+import { partitionRemindersForList, isReminderOverdue } from '@/lib/reminderUtils';
 
 export default function RemindersListScreen() {
   const { user } = useAuthStore();
@@ -22,9 +22,16 @@ export default function RemindersListScreen() {
   React.useEffect(() => {
     if (user) {
       fetchVehicles(user.id);
-      fetchReminders(user.id);
     }
-  }, [user]);
+  }, [user, fetchVehicles]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user) {
+        fetchReminders(user.id);
+      }
+    }, [user, fetchReminders]),
+  );
 
   const onRefresh = async () => {
     if (!user) return;
@@ -49,17 +56,34 @@ export default function RemindersListScreen() {
     });
   };
 
-  const now = Date.now();
-  const filtered = sortRemindersByUrgency(
-    reminders.filter((r) => !activeVehicle || r.vehicleId === activeVehicle.id),
+  const vehicleReminders = reminders.filter(
+    (r) => !activeVehicle || r.vehicleId === activeVehicle.id,
   );
-  const hasReminders = filtered.length > 0;
+  const { active, inactive, completed } = partitionRemindersForList(vehicleReminders);
+  const hasAny = vehicleReminders.length > 0;
+  const now = Date.now();
+
+  const renderSection = (title: string, items: typeof active) =>
+    items.length > 0 ? (
+      <View className="gap-3">
+        <Text className="text-sm font-semibold text-muted-foreground">{title}</Text>
+        {items.map((r) => (
+          <ReminderCard
+            key={r.id}
+            reminder={r}
+            isOverdue={isReminderOverdue(r, now)}
+            currentMileage={activeVehicle?.mileage}
+            onPress={() => router.push(`/(app)/reminders/${r.id}`)}
+          />
+        ))}
+      </View>
+    ) : null;
 
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View className="flex-row items-center justify-between mb-2">
         <Text variant="h1">Recordatorios</Text>
-        {activeVehicle && hasReminders && (
+        {activeVehicle && (
           <Button size="sm" onPress={openAdd}>
             Agregar
           </Button>
@@ -68,27 +92,27 @@ export default function RemindersListScreen() {
 
       <VehicleIdentityHeader />
 
-      {filtered.length === 0 ? (
+      {hasAny ? (
+        <Text variant="muted" className="text-xs mt-2 leading-5">
+          Todos los avisos son opcionales. Tocá uno para editarlo, desactivarlo o eliminarlo.
+        </Text>
+      ) : null}
+
+      {!hasAny ? (
         <View className="mt-4">
           <EmptyState
             icon={Bell}
-            title="Sin recordatorios activos"
+            title="Sin recordatorios"
             description="Configurá los avisos que te sirven para este vehículo"
             actionLabel="Empezar configuración"
             onAction={openSetup}
           />
         </View>
       ) : (
-        <View className="gap-3 mt-4">
-          {filtered.map((r) => (
-            <ReminderCard
-              key={r.id}
-              reminder={r}
-              isOverdue={isReminderOverdue(r, now)}
-              currentMileage={activeVehicle?.mileage}
-              onPress={() => router.push(`/(app)/reminders/${r.id}`)}
-            />
-          ))}
+        <View className="gap-6 mt-4">
+          {renderSection('Activos', active)}
+          {renderSection('Desactivados', inactive)}
+          {renderSection('Completados', completed)}
         </View>
       )}
     </Screen>

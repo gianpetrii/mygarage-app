@@ -19,7 +19,6 @@ import { useVehicleManual } from '@/hooks/useVehicleManual';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useRemindersStore } from '@/store/useRemindersStore';
 import { useMaintenanceStore } from '@/store/useMaintenanceStore';
-import { useFuelStore } from '@/store/useFuelStore';
 import { useExpensesStore } from '@/store/useExpensesStore';
 import { sortRemindersByUrgency, isReminderOverdue } from '@/lib/reminderUtils';
 import { storage, STORAGE_KEYS } from '@/lib/storage';
@@ -30,7 +29,6 @@ export default function DashboardScreen() {
   const { manualResolved, manualLoading, openManual } = useVehicleManual(activeVehicle);
   const { reminders, fetchReminders, completeReminder } = useRemindersStore();
   const { fetchRecords } = useMaintenanceStore();
-  const { fetchEntries } = useFuelStore();
   const { fetchExpenses } = useExpensesStore();
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -41,9 +39,8 @@ export default function DashboardScreen() {
       fetchRecords(user.id),
       fetchReminders(user.id),
       fetchExpenses(user.id),
-      fetchEntries(user.id),
     ]);
-  }, [user, fetchVehicles, fetchRecords, fetchReminders, fetchExpenses, fetchEntries]);
+  }, [user, fetchVehicles, fetchRecords, fetchReminders, fetchExpenses]);
 
   React.useEffect(() => {
     loadData();

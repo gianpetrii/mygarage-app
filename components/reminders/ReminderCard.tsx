@@ -5,7 +5,7 @@ import { es } from 'date-fns/locale';
 import { AlertTriangle, ChevronRight } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { REMINDER_PRIORITY_COLORS } from '@/constants/domain';
-import { isReminderMileageDue } from '@/lib/reminderUtils';
+import { isReminderMileageDue, getReminderListStatus } from '@/lib/reminderUtils';
 import type { ServiceReminder } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -27,9 +27,14 @@ function ReminderCard({
   compact = false,
 }: ReminderCardProps) {
   const priorityColor = REMINDER_PRIORITY_COLORS[reminder.priority];
+  const listStatus = getReminderListStatus(reminder);
+  const isMuted = listStatus !== 'active';
   const mileageDue =
-    currentMileage != null && isReminderMileageDue(reminder, currentMileage);
-  const highlight = isOverdue || mileageDue;
+    !isMuted && currentMileage != null && isReminderMileageDue(reminder, currentMileage);
+  const highlight = !isMuted && (isOverdue || mileageDue);
+
+  const statusLabel =
+    listStatus === 'inactive' ? 'Desactivado' : listStatus === 'completed' ? 'Completado' : null;
 
   return (
     <Pressable
@@ -40,15 +45,26 @@ function ReminderCard({
         highlight
           ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950'
           : 'border-border bg-card',
+        isMuted && 'opacity-60',
         compact && 'p-3',
       )}
     >
       <View className="flex-row items-start gap-2">
         <AlertTriangle size={18} color={highlight ? '#ef4444' : priorityColor} />
         <View className="flex-1 gap-0.5">
-          <Text className="font-semibold text-foreground" numberOfLines={2}>
-            {reminder.title}
-          </Text>
+          <View className="flex-row items-center gap-2 flex-wrap">
+            <Text
+              className={cn('font-semibold text-foreground flex-shrink', isMuted && 'text-muted-foreground')}
+              numberOfLines={2}
+            >
+              {reminder.title}
+            </Text>
+            {statusLabel ? (
+              <Text className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {statusLabel}
+              </Text>
+            ) : null}
+          </View>
           {reminder.targetDate && (
             <Text variant="muted" className="text-xs">
               {isOverdue ? 'Venció el ' : 'Vence el '}

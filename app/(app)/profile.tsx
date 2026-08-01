@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, Pressable, Linking } from 'react-native';
+import { View, Pressable, Linking, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { Moon, Sun, Monitor, LogOut, ChevronRight, Bell, BookOpen } from 'lucide-react-native';
 import { AppEngineIcon } from '@/components/brand/AppEngineIcon';
@@ -11,10 +11,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Text } from '@/components/ui/text';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useThemeStore } from '@/store/useThemeStore';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Colors } from '@/constants/colors';
+import { cancelAllReminderNotifications } from '@/lib/reminderScheduling';
 import { cn } from '@/lib/utils';
 import type { ColorScheme } from '@/types';
 
@@ -25,11 +28,64 @@ const themeOptions: { value: ColorScheme; label: string; icon: React.ElementType
 ];
 
 export default function ProfileScreen() {
-  const { user, logout, isLoading } = useAuthStore();
+  const { user, logout, isLoading, updatePreferences } = useAuthStore();
   const { colorScheme, setColorScheme } = useThemeStore();
   const { resolvedScheme } = useColorScheme();
   const colors = Colors[resolvedScheme];
+  const { requestPermissions } = useNotifications();
+  const { toast } = useToast();
+
   const [themeDialogOpen, setThemeDialogOpen] = React.useState(false);
+  const [notificationsDialogOpen, setNotificationsDialogOpen] = React.useState(false);
+  const [prefsLoading, setPrefsLoading] = React.useState(false);
+
+  const notifications = user?.preferences?.notifications;
+  const pushEnabled = notifications?.push !== false;
+  const remindersEnabled = notifications?.reminders !== false;
+
+  const handlePushToggle = async (enabled: boolean) => {
+    if (!user) return;
+    setPrefsLoading(true);
+    try {
+      if (enabled) {
+        const granted = await requestPermissions(user.id);
+        if (!granted) {
+          toast({
+            message: 'Permisos denegados',
+            description: 'Activá las notificaciones desde Ajustes del sistema.',
+            variant: 'error',
+          });
+          return;
+        }
+      }
+      await updatePreferences({
+        notifications: { ...notifications, push: enabled },
+      });
+    } finally {
+      setPrefsLoading(false);
+    }
+  };
+
+  const handleRemindersToggle = async (enabled: boolean) => {
+    setPrefsLoading(true);
+    try {
+      if (!enabled) {
+        await cancelAllReminderNotifications();
+      }
+      await updatePreferences({
+        notifications: { ...notifications, reminders: enabled },
+      });
+    } finally {
+      setPrefsLoading(false);
+    }
+  };
+
+  const notificationsSummary = [
+    pushEnabled ? 'Push' : null,
+    remindersEnabled ? 'Recordatorios' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ') || 'Desactivadas';
 
   return (
     <Screen>
@@ -57,7 +113,8 @@ export default function ProfileScreen() {
             <SettingRow
               icon={Bell}
               label="Notificaciones"
-              onPress={() => {}}
+              value={notificationsSummary}
+              onPress={() => setNotificationsDialogOpen(true)}
             />
             <Separator />
             <SettingRow
@@ -65,13 +122,6 @@ export default function ProfileScreen() {
               label="Apariencia"
               value={themeOptions.find((t) => t.value === colorScheme)?.label}
               onPress={() => setThemeDialogOpen(true)}
-            />
-            <Separator />
-            <SettingRow
-              icon={Monitor}
-              label="Moneda"
-              value={user?.preferences?.currency ?? 'ARS'}
-              onPress={() => {}}
             />
           </CardContent>
         </Card>
@@ -134,7 +184,63 @@ export default function ProfileScreen() {
           </View>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={notificationsDialogOpen} onOpenChange={setNotificationsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Notificaciones</DialogTitle>
+          </DialogHeader>
+          <View className="gap-4">
+            <PreferenceToggle
+              label="Notificaciones push"
+              description="Avisos en el celular cuando la app está cerrada"
+              value={pushEnabled}
+              disabled={prefsLoading}
+              onValueChange={handlePushToggle}
+            />
+            <Separator />
+            <PreferenceToggle
+              label="Recordatorios locales"
+              description="Alertas por fecha de vencimiento (VTV, service, seguro…)"
+              value={remindersEnabled}
+              disabled={prefsLoading}
+              onValueChange={handleRemindersToggle}
+            />
+          </View>
+        </DialogContent>
+      </Dialog>
     </Screen>
+  );
+}
+
+function PreferenceToggle({
+  label,
+  description,
+  value,
+  disabled,
+  onValueChange,
+}: {
+  label: string;
+  description: string;
+  value: boolean;
+  disabled?: boolean;
+  onValueChange: (value: boolean) => void;
+}) {
+  return (
+    <View className="flex-row items-center gap-3">
+      <View className="flex-1 gap-0.5">
+        <Text className="font-medium text-foreground">{label}</Text>
+        <Text variant="muted" className="text-xs">
+          {description}
+        </Text>
+      </View>
+      <Switch
+        value={value}
+        disabled={disabled}
+        onValueChange={onValueChange}
+        trackColor={{ false: '#d4d4d8', true: '#22c55e' }}
+      />
+    </View>
   );
 }
 
@@ -149,17 +255,24 @@ function SettingRow({
   value?: string;
   onPress: () => void;
 }) {
+  const { resolvedScheme } = useColorScheme();
+  const iconColor = Colors[resolvedScheme].mutedForeground;
+
   return (
     <Pressable
       className="flex-row items-center gap-3 py-3 active:opacity-70"
       onPress={onPress}
     >
-      <Icon size={20} color="#71717a" />
+      <Icon size={20} color={iconColor} />
       <Text variant="p" className="flex-1">
         {label}
       </Text>
-      {value && <Text variant="muted">{value}</Text>}
-      <ChevronRight size={18} color="#71717a" />
+      {value && (
+        <Text variant="muted" className="max-w-[45%] text-right" numberOfLines={1}>
+          {value}
+        </Text>
+      )}
+      <ChevronRight size={18} color={iconColor} />
     </Pressable>
   );
 }

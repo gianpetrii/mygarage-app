@@ -1,6 +1,5 @@
 import { Tabs, router } from 'expo-router';
-import { Home, Bell, User } from 'lucide-react-native';
-import { AppEngineIcon } from '@/components/brand/AppEngineIcon';
+import { Home, Bell, User, Car } from 'lucide-react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { CenterTabButton } from '@/components/navigation/CenterTabButton';
@@ -66,7 +65,7 @@ export default function AppLayout() {
           name="vehicles"
           options={{
             title: 'Vehículos',
-            tabBarIcon: ({ color, size }) => <AppEngineIcon size={size} color={color} />,
+            tabBarIcon: ({ color, size }) => <Car size={size} color={color} />,
           }}
         />
         <Tabs.Screen

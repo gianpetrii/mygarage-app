@@ -7,8 +7,12 @@ import { Text } from '@/components/ui/text';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select } from '@/components/ui/select';
 import { MileageInput } from '@/components/vehicle/MileageInput';
+import { Input } from '@/components/ui/input';
+import { ImagePickerField } from '@/components/ui/image-picker';
+import { CollapsibleSection } from '@/components/ui/collapsible-section';
 import { parseGroupedInteger } from '@/lib/numberFormat';
 import { useRemindersStore } from '@/store/useRemindersStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
 import { isReminderOverdue } from '@/lib/reminderUtils';
 import { REMINDER_PRIORITY_LABELS } from '@/constants/domain';
@@ -21,8 +25,10 @@ const PRIORITY_OPTIONS = Object.entries(REMINDER_PRIORITY_LABELS).map(([value, l
 }));
 
 export default function ReminderDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id: idParam } = useLocalSearchParams<{ id: string }>();
+  const id = Array.isArray(idParam) ? idParam[0] : idParam;
   const { reminders, updateReminder, completeReminder, deleteReminder } = useRemindersStore();
+  const { user } = useAuthStore();
   const { vehicles } = useVehiclesStore();
   const reminder = reminders.find((r) => r.id === id);
   const [loading, setLoading] = React.useState(false);
@@ -31,6 +37,10 @@ export default function ReminderDetailScreen() {
   const [priority, setPriority] = React.useState<ReminderPriority>('medium');
   const [completedDate, setCompletedDate] = React.useState(new Date());
   const [completedMileage, setCompletedMileage] = React.useState('');
+  const [completedCost, setCompletedCost] = React.useState('');
+  const [completedServiceProvider, setCompletedServiceProvider] = React.useState('');
+  const [completedPhotos, setCompletedPhotos] = React.useState<string[]>([]);
+  const [completedNotes, setCompletedNotes] = React.useState('');
   const [showCompleteForm, setShowCompleteForm] = React.useState(false);
 
   React.useEffect(() => {
@@ -41,12 +51,12 @@ export default function ReminderDetailScreen() {
     );
     setPriority(reminder.priority);
     const vehicle = vehicles.find((v) => v.id === reminder.vehicleId);
-    setCompletedMileage(
-      String(Math.floor(vehicle?.mileage ?? reminder.lastCompletedMileage ?? 0)),
-    );
+    const defaultMileage =
+      reminder.targetMileage ?? vehicle?.mileage ?? reminder.lastCompletedMileage ?? 0;
+    setCompletedMileage(String(Math.floor(defaultMileage)));
   }, [reminder, vehicles]);
 
-  if (!reminder) {
+  if (!reminder || !id) {
     return (
       <View className="flex-1 items-center justify-center">
         <Text variant="muted">Recordatorio no encontrado</Text>
@@ -80,7 +90,9 @@ export default function ReminderDetailScreen() {
         });
       }
 
-      Alert.alert('Guardado', 'Los cambios se guardaron correctamente.');
+      Alert.alert('Guardado', 'Los cambios se guardaron correctamente.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch {
       Alert.alert('Error', 'No se pudieron guardar los cambios.');
     } finally {
@@ -88,8 +100,30 @@ export default function ReminderDetailScreen() {
     }
   };
 
+  const handleReactivate = async () => {
+    setLoading(true);
+    try {
+      await updateReminder(id, { isActive: true, isCompleted: false });
+      if (reminder.targetDate) {
+        await scheduleReminderNotification({
+          ...reminder,
+          isActive: true,
+          isCompleted: false,
+        });
+      }
+      Alert.alert('Listo', 'El recordatorio volvió a estar activo.');
+    } catch {
+      Alert.alert('Error', 'No se pudo reactivar el recordatorio.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeactivate = async () => {
-    Alert.alert('Desactivar', '¿Desactivar este recordatorio? Podés volver a crearlo después.', [
+    Alert.alert(
+      'Desactivar',
+      '¿Desactivar este recordatorio? Seguirá en la lista pero no te avisará hasta que lo reactives.',
+      [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Desactivar',
@@ -111,15 +145,24 @@ export default function ReminderDetailScreen() {
 
     setLoading(true);
     try {
-      await completeReminder(id, completedDate.getTime(), mileage);
-
-      if (hasRecurringInterval) {
-        Alert.alert(
-          'Listo',
-          'Marcamos el mantenimiento como hecho y programamos el próximo vencimiento.',
-        );
+      const parsedCost = completedCost.trim() ? parseFloat(completedCost) : undefined;
+      if (completedCost.trim() && !Number.isFinite(parsedCost)) {
+        Alert.alert('Error', 'Ingresá un monto válido.');
+        setLoading(false);
+        return;
       }
-      router.back();
+
+      await completeReminder(id, completedDate.getTime(), mileage, {
+        cost: parsedCost,
+        photos: completedPhotos,
+        notes: completedNotes.trim() || undefined,
+        serviceProvider: completedServiceProvider.trim() || undefined,
+      });
+
+      const message = hasRecurringInterval
+        ? 'Marcamos el mantenimiento como hecho y programamos el próximo vencimiento.'
+        : 'Quedó registrado en el historial del vehículo.';
+      Alert.alert('Listo', message, [{ text: 'OK', onPress: () => router.back() }]);
     } catch {
       Alert.alert('Error', 'No se pudo completar el recordatorio.');
     } finally {
@@ -134,15 +177,23 @@ export default function ReminderDetailScreen() {
         text: 'Eliminar',
         style: 'destructive',
         onPress: async () => {
-          await deleteReminder(id);
-          router.back();
+          if (!id) return;
+          try {
+            await deleteReminder(id);
+            router.back();
+          } catch {
+            Alert.alert(
+              'Error',
+              'No se pudo eliminar en la nube. Revisá tu conexión e intentá de nuevo.',
+            );
+          }
         },
       },
     ]);
   };
 
   return (
-    <FormScreen title={reminder.title}>
+    <FormScreen title={reminder.title} contentClassName="pb-10">
       <View
         className={`rounded-xl border p-4 gap-1 ${
           overdue ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950' : 'border-border bg-card'
@@ -181,11 +232,13 @@ export default function ReminderDetailScreen() {
         Guardar cambios
       </Button>
 
-      {!showCompleteForm ? (
+      {reminder.isActive && !reminder.isCompleted && !showCompleteForm ? (
         <Button variant="outline" onPress={() => setShowCompleteForm(true)}>
           Marcar como hecho
         </Button>
-      ) : (
+      ) : null}
+
+      {reminder.isActive && !reminder.isCompleted && showCompleteForm ? (
         <View className="gap-3 rounded-xl border border-border bg-card p-4">
           <Text className="font-semibold text-foreground">
             {hasRecurringInterval ? 'Registrar mantenimiento' : 'Completar recordatorio'}
@@ -196,11 +249,51 @@ export default function ReminderDetailScreen() {
               : 'Este recordatorio no tiene intervalo; se marcará como completado.'}
           </Text>
           <DatePicker label="Fecha en que lo hiciste" value={completedDate} onChange={setCompletedDate} />
-          <MileageInput
-            label="Kilometraje al momento"
-            value={completedMileage}
-            onChangeValue={setCompletedMileage}
-          />
+          <View className="flex-row gap-3">
+            <MileageInput
+              label="Kilometraje al momento"
+              value={completedMileage}
+              onChangeValue={setCompletedMileage}
+              containerClassName="flex-1"
+            />
+            <Input
+              label="Monto (opcional)"
+              value={completedCost}
+              onChangeText={setCompletedCost}
+              keyboardType="decimal-pad"
+              placeholder="ARS"
+              containerClassName="flex-1"
+            />
+          </View>
+          <CollapsibleSection title="Información adicional (opcional)">
+            {user ? (
+              <ImagePickerField
+                label="Foto del comprobante"
+                images={completedPhotos}
+                onChange={setCompletedPhotos}
+                maxImages={4}
+                uploadConfig={{
+                  userId: user.id,
+                  vehicleId: reminder.vehicleId,
+                  type: 'receipt',
+                }}
+              />
+            ) : null}
+            <Input
+              label="Taller o proveedor"
+              value={completedServiceProvider}
+              onChangeText={setCompletedServiceProvider}
+              placeholder="Opcional"
+            />
+            <Input
+              label="Notas"
+              value={completedNotes}
+              onChangeText={setCompletedNotes}
+              multiline
+              numberOfLines={3}
+              placeholder="Detalles, repuestos, etc."
+            />
+          </CollapsibleSection>
           <Button onPress={handleComplete} loading={loading}>
             Confirmar
           </Button>
@@ -208,11 +301,17 @@ export default function ReminderDetailScreen() {
             Cancelar
           </Button>
         </View>
-      )}
+      ) : null}
 
-      <Button variant="outline" onPress={handleDeactivate}>
-        Desactivar recordatorio
-      </Button>
+      {!reminder.isActive || reminder.isCompleted ? (
+        <Button variant="outline" onPress={handleReactivate} loading={loading}>
+          Reactivar recordatorio
+        </Button>
+      ) : (
+        <Button variant="outline" onPress={handleDeactivate}>
+          Desactivar recordatorio
+        </Button>
+      )}
       <Button variant="destructive" onPress={handleDelete}>
         Eliminar
       </Button>
