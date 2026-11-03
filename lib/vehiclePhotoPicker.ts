@@ -1,5 +1,6 @@
 import { Alert } from 'react-native';
 import * as ExpoImagePicker from 'expo-image-picker';
+import { APP_LIMITS } from '@/constants/limits';
 
 export type VehiclePhotoSource = 'gallery' | 'camera';
 
@@ -13,7 +14,7 @@ export async function pickVehiclePhotoFromGallery(): Promise<string | null> {
   const result = await ExpoImagePicker.launchImageLibraryAsync({
     mediaTypes: ExpoImagePicker.MediaTypeOptions.Images,
     allowsMultipleSelection: false,
-    quality: 0.85,
+    quality: APP_LIMITS.imagePickerQuality,
   });
 
   if (result.canceled || !result.assets[0]) return null;
@@ -27,7 +28,9 @@ export async function takeVehiclePhotoWithCamera(): Promise<string | null> {
     return null;
   }
 
-  const result = await ExpoImagePicker.launchCameraAsync({ quality: 0.85 });
+  const result = await ExpoImagePicker.launchCameraAsync({
+    quality: APP_LIMITS.imagePickerQuality,
+  });
   if (result.canceled || !result.assets[0]) return null;
   return result.assets[0].uri;
 }

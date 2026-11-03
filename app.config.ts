@@ -23,12 +23,22 @@ const plugins: ExpoConfig['plugins'] = [
   'expo-font',
   'expo-image-picker',
   '@react-native-community/datetimepicker',
-  [
+];
+
+if (googleIosUrlScheme) {
+  plugins.push([
     '@react-native-google-signin/google-signin',
     {
       iosUrlScheme: googleIosUrlScheme,
     },
-  ],
+  ]);
+}
+
+if (!isIosPersonalTeam) {
+  plugins.push('expo-apple-authentication');
+}
+
+plugins.push(
   './plugins/withFirebaseModularHeaders.js',
   './plugins/withFmtXcode26Fix.js',
   [
@@ -39,10 +49,9 @@ const plugins: ExpoConfig['plugins'] = [
       imageWidth: 200,
     },
   ],
-];
+);
 
 if (!isIosPersonalTeam) {
-  plugins.splice(4, 0, 'expo-apple-authentication');
   plugins.push([
     'expo-notifications',
     {
@@ -54,7 +63,7 @@ if (!isIosPersonalTeam) {
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'MyGarage',
+  name: 'MyGarage App',
   slug: 'mygarage-app',
   version: '1.0.0',
   orientation: 'portrait',
@@ -69,11 +78,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.mygarage.app',
+    bundleIdentifier: 'com.gianpetri.mygarage',
     usesAppleSignIn: !isIosPersonalTeam,
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+      CFBundleDisplayName: 'MyGarage App',
+    },
   },
   android: {
-    package: 'com.mygarage.app',
+    package: 'com.gianpetri.mygarage',
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#ffffff',
@@ -97,7 +110,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     firebaseMessagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     firebaseAppId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
     eas: {
-      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? 'e50b729c-a39c-4ade-95ff-4aa228365123',
+      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? '9b667dce-5028-4919-be6a-fbc3981c4b4f',
     },
     iosPersonalTeam: isIosPersonalTeam,
   },

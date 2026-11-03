@@ -6,6 +6,7 @@ import {
   deleteVehicle as deleteVehicleFromDb,
 } from '@/lib/vehicles';
 import { cacheCollection, getCachedCollection, CACHE_KEYS } from '@/lib/offlineCache';
+import { assertCanAddVehicle } from '@/lib/quota';
 import type { Vehicle } from '@/types';
 
 interface VehiclesStore {
@@ -40,6 +41,7 @@ export const useVehiclesStore = create<VehiclesStore>((set, get) => ({
   },
 
   addVehicle: async (data) => {
+    assertCanAddVehicle(get().vehicles.length);
     const id = await addVehicleToDb(data);
     const now = Date.now();
     const newVehicle: Vehicle = { ...data, id, createdAt: now, updatedAt: now };

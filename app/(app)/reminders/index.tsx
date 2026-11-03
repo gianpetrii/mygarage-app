@@ -11,6 +11,7 @@ import { VehicleIdentityHeader } from '@/components/vehicle/VehicleIdentityHeade
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRemindersStore } from '@/store/useRemindersStore';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
+import { useAddVehicleNavigation } from '@/hooks/useAddVehicleNavigation';
 import {
   partitionRemindersForList,
   isReminderOverdue,
@@ -21,6 +22,7 @@ export default function RemindersListScreen() {
   const { user } = useAuthStore();
   const { reminders, fetchReminders } = useRemindersStore();
   const { vehicles, activeVehicle, fetchVehicles } = useActiveVehicle();
+  const navigateAddVehicle = useAddVehicleNavigation();
   const [refreshing, setRefreshing] = React.useState(false);
 
   React.useEffect(() => {
@@ -111,7 +113,7 @@ export default function RemindersListScreen() {
             title="Agregá un vehículo primero"
             description="Los recordatorios se configuran por auto"
             actionLabel="Agregar vehículo"
-            onAction={() => router.push('/(app)/vehicles/new')}
+            onAction={navigateAddVehicle}
           />
         </View>
       ) : !activeVehicle ? (

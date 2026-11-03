@@ -18,6 +18,7 @@ import {
   MOVEMENT_KIND_OPTIONS,
   type MovementKind,
 } from '@/lib/maintenanceForm';
+import { APP_LIMITS } from '@/constants/limits';
 import { parseGroupedInteger } from '@/lib/numberFormat';
 import { cn } from '@/lib/utils';
 
@@ -195,7 +196,7 @@ export default function AddMovementScreen() {
           label="Foto del comprobante"
           images={photos}
           onChange={setPhotos}
-          maxImages={4}
+          maxImages={APP_LIMITS.maxReceiptsPerActivity}
           uploadConfig={
             user && vehicleId
               ? { userId: user.id, vehicleId, type: 'receipt' }

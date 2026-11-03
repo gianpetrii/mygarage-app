@@ -5,12 +5,15 @@ import { Screen } from '@/components/layout/Screen';
 import { Text } from '@/components/ui/text';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AddVehicleCard, VehicleSummaryCard } from '@/components/vehicle/VehicleSummaryCard';
+import { useAddVehicleNavigation } from '@/hooks/useAddVehicleNavigation';
+import { canAddVehicle } from '@/lib/quota';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
 
 export default function VehiclesListScreen() {
   const { user } = useAuthStore();
   const { vehicles, isLoading, fetchVehicles } = useVehiclesStore();
+  const navigateAddVehicle = useAddVehicleNavigation();
   const [refreshing, setRefreshing] = React.useState(false);
 
   React.useEffect(() => {
@@ -41,7 +44,7 @@ export default function VehiclesListScreen() {
             title="Sin vehículos"
             description="Centralizá services, recordatorios y comprobantes por auto"
           />
-          <AddVehicleCard onPress={() => router.push('/(app)/vehicles/new')} />
+          <AddVehicleCard onPress={navigateAddVehicle} />
         </View>
       ) : (
         <View className="gap-3">
@@ -53,7 +56,9 @@ export default function VehiclesListScreen() {
               onPress={() => router.push(`/(app)/vehicles/${vehicle.id}`)}
             />
           ))}
-          <AddVehicleCard onPress={() => router.push('/(app)/vehicles/new')} />
+          {canAddVehicle(vehicles.length) && (
+            <AddVehicleCard onPress={navigateAddVehicle} />
+          )}
         </View>
       )}
     </Screen>

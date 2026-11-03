@@ -19,9 +19,9 @@ import {
   takeVehiclePhotoWithCamera,
   type VehiclePhotoSource,
 } from '@/lib/vehiclePhotoPicker';
+import { APP_LIMITS } from '@/constants/limits';
+import { guardAddVehiclePhoto, QuotaExceededError } from '@/lib/quota';
 import { cn } from '@/lib/utils';
-
-const MAX_PHOTOS = 5;
 const HERO_HEIGHT = 176;
 
 interface VehiclePhotoGalleryProps {
@@ -49,7 +49,7 @@ function VehiclePhotoGallery({
   const screenWidth = Dimensions.get('window').width;
   const activeIndex = Math.min(selectedIndex, Math.max(0, photos.length - 1));
   const activePhoto = photos[activeIndex];
-  const canAdd = photos.length < MAX_PHOTOS;
+  const canAdd = photos.length < APP_LIMITS.maxPhotosPerVehicle;
   const hasMultiple = photos.length > 1;
 
   React.useEffect(() => {
@@ -78,6 +78,7 @@ function VehiclePhotoGallery({
 
   const openSourceSheet = () => {
     if (!canAdd || isUploading) return;
+    if (!guardAddVehiclePhoto(photos.length)) return;
     setSourceSheetOpen(true);
   };
 
@@ -95,8 +96,12 @@ function VehiclePhotoGallery({
       const next = [...photos, remoteUrl];
       await onPhotosChange(next);
       setSelectedIndex(next.length - 1);
-    } catch {
-      Alert.alert('Error', 'No se pudo subir la foto. Intentá de nuevo.');
+    } catch (e) {
+      const quota = e instanceof QuotaExceededError;
+      Alert.alert(
+        quota ? 'Límite' : 'Error',
+        quota ? e.message : 'No se pudo subir la foto. Intentá de nuevo.',
+      );
     } finally {
       setIsUploading(false);
     }

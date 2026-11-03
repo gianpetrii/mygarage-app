@@ -12,6 +12,8 @@ import { VehicleYearSelect } from '@/components/vehicle/VehicleYearSelect';
 import { MileageInput } from '@/components/vehicle/MileageInput';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
+import { APP_LIMITS } from '@/constants/limits';
+import { QuotaExceededError } from '@/lib/quota';
 import { uploadVehiclePhoto } from '@/lib/uploads';
 import { VehicleTrimField } from '@/components/vehicle/VehicleTrimField';
 import { normalizeMake, normalizeModel, normalizeTrim } from '@/lib/vehicleCatalog';
@@ -95,8 +97,12 @@ export default function NewVehicleScreen() {
       });
 
       router.replace('/(app)/vehicles');
-    } catch {
-      Alert.alert('Error', 'No se pudo guardar el vehículo. Intentá de nuevo.');
+    } catch (e) {
+      const quota = e instanceof QuotaExceededError;
+      Alert.alert(
+        quota ? 'Límite alcanzado' : 'Error',
+        quota ? e.message : 'No se pudo guardar el vehículo. Intentá de nuevo.',
+      );
     } finally {
       setIsLoading(false);
       isSavingRef.current = false;
@@ -158,7 +164,7 @@ export default function NewVehicleScreen() {
             label="Foto del vehículo"
             images={photos}
             onChange={setPhotos}
-            maxImages={1}
+            maxImages={APP_LIMITS.maxPhotosPerVehicle}
           />
           <Button onPress={handleSubmit} loading={isLoading} size="lg" className="mt-2">
             Guardar vehículo

@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { View, Pressable } from 'react-native';
-import { router } from 'expo-router';
-import { X, ChevronDown } from 'lucide-react-native';
+import { ChevronDown } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
+import { useAddVehicleNavigation } from '@/hooks/useAddVehicleNavigation';
+import { canAddVehicle } from '@/lib/quota';
 import { cn } from '@/lib/utils';
 import type { Vehicle } from '@/types';
 
@@ -15,6 +16,7 @@ interface VehicleSwitcherProps {
 
 function VehicleSwitcher({ className, showAllOption = false, onSelect }: VehicleSwitcherProps) {
   const { vehicles, activeVehicle, setActiveVehicle } = useActiveVehicle();
+  const navigateAddVehicle = useAddVehicleNavigation();
   const [open, setOpen] = React.useState(false);
 
   if (vehicles.length === 0) return null;
@@ -76,15 +78,17 @@ function VehicleSwitcher({ className, showAllOption = false, onSelect }: Vehicle
               </Text>
             </Pressable>
           ))}
-          <Pressable
-            onPress={() => {
-              setOpen(false);
-              router.push('/(app)/vehicles/new');
-            }}
-            className="px-4 py-3 bg-muted/50"
-          >
-            <Text className="text-sm text-primary font-medium">+ Agregar vehículo</Text>
-          </Pressable>
+          {canAddVehicle(vehicles.length) && (
+            <Pressable
+              onPress={() => {
+                setOpen(false);
+                navigateAddVehicle();
+              }}
+              className="px-4 py-3 bg-muted/50"
+            >
+              <Text className="text-sm text-primary font-medium">+ Agregar vehículo</Text>
+            </Pressable>
+          )}
         </View>
       )}
     </View>

@@ -15,6 +15,7 @@ import { useRemindersStore } from '@/store/useRemindersStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useVehiclesStore } from '@/store/useVehiclesStore';
 import { isReminderOverdue } from '@/lib/reminderUtils';
+import { APP_LIMITS } from '@/constants/limits';
 import { REMINDER_PRIORITY_LABELS } from '@/constants/domain';
 import type { ReminderPriority } from '@/types';
 
@@ -255,7 +256,7 @@ export default function ReminderDetailScreen() {
                 label="Foto del comprobante"
                 images={completedPhotos}
                 onChange={setCompletedPhotos}
-                maxImages={4}
+                maxImages={APP_LIMITS.maxReceiptsPerActivity}
                 uploadConfig={{
                   userId: user.id,
                   vehicleId: reminder.vehicleId,

@@ -26,10 +26,12 @@ import {
   filterRemindersForActiveVehicle,
 } from '@/lib/reminderUtils';
 import { storage, STORAGE_KEYS } from '@/lib/storage';
+import { useAddVehicleNavigation } from '@/hooks/useAddVehicleNavigation';
 
 export default function DashboardScreen() {
   const { user } = useAuthStore();
   const { vehicles, activeVehicle, fetchVehicles } = useActiveVehicle();
+  const navigateAddVehicle = useAddVehicleNavigation();
   const { manualResolved, manualLoading, openManual } = useVehicleManual(activeVehicle);
   const { reminders, fetchReminders, completeReminder } = useRemindersStore();
   const { fetchRecords } = useMaintenanceStore();
@@ -121,7 +123,7 @@ export default function DashboardScreen() {
           </Text>
           <Text
             className="text-primary font-semibold mt-2"
-            onPress={() => router.push('/(app)/vehicles/new')}
+            onPress={navigateAddVehicle}
           >
             Agregar vehículo →
           </Text>

@@ -14,6 +14,7 @@ import { useVehiclesStore } from '@/store/useVehiclesStore';
 import { VehicleTrimField } from '@/components/vehicle/VehicleTrimField';
 import { normalizeMake, normalizeModel, normalizeTrim } from '@/lib/vehicleCatalog';
 import { parseGroupedInteger } from '@/lib/numberFormat';
+import { APP_LIMITS } from '@/constants/limits';
 import type { FuelType, Transmission } from '@/types';
 
 const FUEL_OPTIONS = [
@@ -91,7 +92,12 @@ export default function EditVehicleScreen() {
 
   return (
     <FormScreen title="Editar vehículo">
-      <ImagePickerField label="Fotos" images={photos} onChange={setPhotos} maxImages={6} />
+      <ImagePickerField
+        label="Fotos"
+        images={photos}
+        onChange={setPhotos}
+        maxImages={APP_LIMITS.maxPhotosPerVehicle}
+      />
 
       <View className="gap-4">
         <VehicleMakeModelFields

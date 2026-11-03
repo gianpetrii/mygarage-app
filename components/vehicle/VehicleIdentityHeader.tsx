@@ -6,6 +6,8 @@ import { Text } from '@/components/ui/text';
 import { KeyboardSheet } from '@/components/layout/KeyboardSheet';
 import { AddVehicleCard, VehicleSummaryCard } from '@/components/vehicle/VehicleSummaryCard';
 import { useActiveVehicle } from '@/hooks/useActiveVehicle';
+import { useAddVehicleNavigation } from '@/hooks/useAddVehicleNavigation';
+import { canAddVehicle } from '@/lib/quota';
 import { cn } from '@/lib/utils';
 import type { Vehicle } from '@/types';
 
@@ -16,6 +18,7 @@ interface VehicleIdentityHeaderProps {
 
 function VehicleIdentityHeader({ vehicle: vehicleProp, className }: VehicleIdentityHeaderProps) {
   const { vehicles, activeVehicle, setActiveVehicle } = useActiveVehicle();
+  const navigateAddVehicle = useAddVehicleNavigation();
   const vehicle = vehicleProp ?? activeVehicle;
   const [sheetOpen, setSheetOpen] = React.useState(false);
 
@@ -50,14 +53,14 @@ function VehicleIdentityHeader({ vehicle: vehicleProp, className }: VehicleIdent
             · {vehicles.length} en total
           </Text>
         </Pressable>
-      ) : (
+      ) : canAddVehicle(vehicles.length) ? (
         <Pressable
-          onPress={() => router.push('/(app)/vehicles/new')}
+          onPress={navigateAddVehicle}
           className="self-center py-1 active:opacity-70"
         >
           <Text className="text-sm font-medium text-primary">+ Agregar otro vehículo</Text>
         </Pressable>
-      )}
+      ) : null}
 
       <KeyboardSheet visible={sheetOpen} onClose={() => setSheetOpen(false)}>
         <Text variant="h3" className="mb-1">
@@ -79,12 +82,14 @@ function VehicleIdentityHeader({ vehicle: vehicleProp, className }: VehicleIdent
               onPress={() => selectVehicle(v)}
             />
           ))}
-          <AddVehicleCard
-            onPress={() => {
-              setSheetOpen(false);
-              router.push('/(app)/vehicles/new');
-            }}
-          />
+          {canAddVehicle(vehicles.length) && (
+            <AddVehicleCard
+              onPress={() => {
+                setSheetOpen(false);
+                navigateAddVehicle();
+              }}
+            />
+          )}
         </View>
 
         <Pressable

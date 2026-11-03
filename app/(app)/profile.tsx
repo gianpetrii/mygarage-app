@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { View, Pressable, Linking, Switch } from 'react-native';
 import { router } from 'expo-router';
-import { Moon, Sun, Monitor, LogOut, ChevronRight, Bell, BookOpen } from 'lucide-react-native';
+import { Moon, Sun, Monitor, LogOut, ChevronRight, Bell, BookOpen, Shield, LifeBuoy } from 'lucide-react-native';
+import { LEGAL_URLS } from '@/constants/legal';
 import { AppEngineIcon } from '@/components/brand/AppEngineIcon';
 import { FLATICON_BRAND_ICON, FLATICON_ATTRIBUTION_LABEL } from '@/constants/attribution';
 import { Screen } from '@/components/layout/Screen';
@@ -111,6 +112,18 @@ export default function ProfileScreen() {
 
         <Card>
           <CardContent className="pt-6 gap-0">
+            <SettingRow
+              icon={Shield}
+              label="Política de privacidad"
+              onPress={() => Linking.openURL(LEGAL_URLS.privacy)}
+            />
+            <Separator />
+            <SettingRow
+              icon={LifeBuoy}
+              label="Soporte"
+              onPress={() => Linking.openURL(LEGAL_URLS.support)}
+            />
+            <Separator />
             <SettingRow
               icon={BookOpen}
               label="Guías prácticas"

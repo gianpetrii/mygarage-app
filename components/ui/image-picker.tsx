@@ -2,6 +2,8 @@ import * as React from 'react';
 import { View, Pressable, Image, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import * as ExpoImagePicker from 'expo-image-picker';
 import { Camera, ImagePlus, X } from 'lucide-react-native';
+import { APP_LIMITS } from '@/constants/limits';
+import { QuotaExceededError } from '@/lib/quota';
 import { uploadVehiclePhoto, uploadReceipt, isLocalUri } from '@/lib/uploads';
 import { cn } from '@/lib/utils';
 import { Text } from './text';
@@ -45,7 +47,7 @@ function ImagePickerField({
   label,
   images,
   onChange,
-  maxImages = 5,
+  maxImages = APP_LIMITS.maxPhotosPerVehicle,
   className,
   uploadConfig,
 }: ImagePickerProps) {
@@ -59,8 +61,12 @@ function ImagePickerField({
       try {
         const remote = await resolveUris(uris, uploadConfig);
         onChange([...images, ...remote]);
-      } catch {
-        Alert.alert('Error', 'No se pudieron subir las fotos. Intentá de nuevo.');
+      } catch (e) {
+        const quota = e instanceof QuotaExceededError;
+        Alert.alert(
+          quota ? 'Límite' : 'Error',
+          quota ? e.message : 'No se pudieron subir las fotos. Intentá de nuevo.',
+        );
       } finally {
         setIsUploading(false);
       }
@@ -80,7 +86,7 @@ function ImagePickerField({
       mediaTypes: ExpoImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       selectionLimit: maxImages - images.length,
-      quality: 0.8,
+      quality: APP_LIMITS.imagePickerQuality,
     });
 
     if (!result.canceled) {
@@ -97,7 +103,7 @@ function ImagePickerField({
     }
 
     const result = await ExpoImagePicker.launchCameraAsync({
-      quality: 0.8,
+      quality: APP_LIMITS.imagePickerQuality,
     });
 
     if (!result.canceled) {
